@@ -1,0 +1,6 @@
+Product Name,SKU,Description,Price,Current Stock,Minimum Stock Level,Stock Location,Image URL
+"Widget A",WDG-001,"A premium quality widget",29.99,150,20,Warehouse,
+"Widget B",WDG-002,"Economy widget for daily use",14.99,75,10,Sales Center,
+"Gadget Pro",GDG-001,"Advanced gadget with Bluetooth",89.99,30,15,Warehouse,
+"Gadget Mini",GDG-002,"Compact gadget for travel",49.99,5,10,Warehouse,
+"Accessory Pack",ACC-001,"Universal accessory bundle",19.99,200,25,Sales Center,
