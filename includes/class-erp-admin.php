@@ -109,7 +109,7 @@ class JESP_ERP_Admin
             'jesp-erp-admin',
             JESP_ERP_PLUGIN_URL . 'admin/js/erp-admin.js',
             array('jquery', 'chartjs'),
-            JESP_ERP_VERSION . '.13',
+            JESP_ERP_VERSION . '.14',
             true
         );
 

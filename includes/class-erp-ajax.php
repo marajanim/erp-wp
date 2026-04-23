@@ -352,10 +352,14 @@ class JESP_ERP_Ajax
     public function erp_export_csv()
     {
         $this->verify();
-        JESP_ERP_Export::export_csv(array(
-            'category' => absint($_POST['category'] ?? 0),
-            'stock_status' => sanitize_text_field($_POST['stock_status'] ?? ''),
-        ));
+        // Export is triggered via GET (window.location redirect), so use $_REQUEST.
+        $fields_str = sanitize_text_field( $_REQUEST['fields'] ?? '' );
+        $fields     = $fields_str !== '' ? explode( ',', $fields_str ) : array();
+        JESP_ERP_Export::export_csv( array(
+            'category'     => absint( $_REQUEST['category'] ?? 0 ),
+            'stock_status' => sanitize_text_field( $_REQUEST['stock_status'] ?? '' ),
+            'fields'       => $fields,
+        ) );
     }
 
     /* ------------------------------------------------------------------ */

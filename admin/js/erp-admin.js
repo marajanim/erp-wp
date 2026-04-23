@@ -1204,18 +1204,61 @@
        EXPORT
        ==================================================================== */
     function initExport() {
-        $('#erp-export-form').on('submit', function () {
+        // Reflect checked state on the label styling.
+        function syncFieldStyle($cb) {
+            $cb.closest('.jesp-export-field-item').toggleClass('is-checked', $cb.is(':checked'));
+        }
+
+        // Sync all on load.
+        $('.erp-export-field').each(function () { syncFieldStyle($(this)); });
+
+        // Individual field toggle.
+        $(document).on('change', '.erp-export-field', function () {
+            syncFieldStyle($(this));
+            const total   = $('.erp-export-field').length;
+            const checked = $('.erp-export-field:checked').length;
+            $('#erp-export-select-all').prop('indeterminate', checked > 0 && checked < total)
+                                       .prop('checked', checked === total);
+        });
+
+        // Select All toggle.
+        $('#erp-export-select-all').on('change', function () {
+            const on = $(this).is(':checked');
+            $('.erp-export-field').prop('checked', on).each(function () { syncFieldStyle($(this)); });
+        });
+
+        // Initialise Select All state.
+        (function () {
+            const total   = $('.erp-export-field').length;
+            const checked = $('.erp-export-field:checked').length;
+            $('#erp-export-select-all').prop('checked', checked === total)
+                                       .prop('indeterminate', checked > 0 && checked < total);
+        })();
+
+        // Form submit — collect fields and redirect via GET.
+        $('#erp-export-form').on('submit', function (e) {
+            e.preventDefault();
+
+            const selected = [];
+            $('.erp-export-field:checked').each(function () { selected.push($(this).val()); });
+
+            if (!selected.length) {
+                ERP.toast('Please select at least one field.', 'error');
+                return;
+            }
+
             $('#erp-export-cat-hidden').val($('#erp-export-category').val());
             $('#erp-export-status-hidden').val($('input[name="export_stock_status"]:checked').val());
+            $('#erp-export-fields-hidden').val(selected.join(','));
 
             const params = new URLSearchParams({
-                action: 'erp_export_csv',
-                nonce: ERP.nonce,
-                category: $('#erp-export-cat-hidden').val(),
+                action:       'erp_export_csv',
+                nonce:        ERP.nonce,
+                category:     $('#erp-export-cat-hidden').val(),
                 stock_status: $('#erp-export-status-hidden').val(),
+                fields:       selected.join(','),
             });
             window.location.href = ERP.ajaxUrl + '?' + params.toString();
-            return false;
         });
     }
 
