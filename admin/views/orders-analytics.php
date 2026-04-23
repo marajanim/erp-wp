@@ -40,9 +40,6 @@
             <button class="jesp-tab-btn" data-tab="product-performance">
                 <span class="dashicons dashicons-chart-area"></span> <?php esc_html_e('Product Performance', 'jesp-erp'); ?>
             </button>
-            <button class="jesp-tab-btn" data-tab="brand-revenue">
-                <span class="dashicons dashicons-awards"></span> <?php esc_html_e('Brand Revenue', 'jesp-erp'); ?>
-            </button>
         </div>
 
         <!-- TAB: All Orders -->
@@ -164,57 +161,6 @@
             <div class="jesp-pagination" id="erp-orders-pagination"></div>
         </div>
 
-        <!-- TAB: Brand Revenue -->
-        <div class="jesp-tab-panel" data-panel="brand-revenue">
-            <!-- Summary cards -->
-            <div class="jesp-erp-row" style="margin-bottom:20px;">
-                <div class="jesp-erp-col-4">
-                    <div class="jesp-stat-card jesp-stat-green" style="margin:0;">
-                        <div class="jesp-stat-icon"><span class="dashicons dashicons-awards"></span></div>
-                        <div class="jesp-stat-content">
-                            <span class="jesp-stat-value" id="br-total-revenue">—</span>
-                            <span class="jesp-stat-label"><?php esc_html_e('Total Revenue', 'jesp-erp'); ?></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="jesp-erp-col-4">
-                    <div class="jesp-stat-card jesp-stat-blue" style="margin:0;">
-                        <div class="jesp-stat-icon"><span class="dashicons dashicons-tag"></span></div>
-                        <div class="jesp-stat-content">
-                            <span class="jesp-stat-value" id="br-brand-count">—</span>
-                            <span class="jesp-stat-label"><?php esc_html_e('Brands', 'jesp-erp'); ?></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="jesp-erp-col-4">
-                    <div class="jesp-stat-card jesp-stat-purple" style="margin:0;">
-                        <div class="jesp-stat-icon"><span class="dashicons dashicons-admin-generic"></span></div>
-                        <div class="jesp-stat-content">
-                            <span class="jesp-stat-value" id="br-top-brand">—</span>
-                            <span class="jesp-stat-label"><?php esc_html_e('Top Brand', 'jesp-erp'); ?></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Brand Revenue Table -->
-            <div class="jesp-table-responsive">
-                <table class="jesp-table" id="erp-brand-table">
-                    <thead>
-                        <tr>
-                            <th><?php esc_html_e('Brand', 'jesp-erp'); ?></th>
-                            <th><?php esc_html_e('Orders', 'jesp-erp'); ?></th>
-                            <th><?php esc_html_e('Revenue', 'jesp-erp'); ?></th>
-                            <th><?php esc_html_e('Share', 'jesp-erp'); ?></th>
-                            <th><?php esc_html_e('Performance', 'jesp-erp'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody id="erp-brand-body">
-                        <tr><td colspan="5" class="jesp-loading"><?php esc_html_e('Loading...', 'jesp-erp'); ?></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 </div>
 

@@ -179,6 +179,7 @@
             if (tab === 'hero') loadHeroProducts();
             if (tab === 'stock-value') loadStockValue();
             if (tab === 'customers') loadDashCustomers();
+            if (tab === 'brand-revenue') loadBrandRevenue();
         });
 
         // Date range buttons.
@@ -198,6 +199,7 @@
             // Also refresh active tab data.
             const activeTab = $('.jesp-tab-btn.active').data('tab');
             if (activeTab === 'hero') loadHeroProducts();
+            if (activeTab === 'brand-revenue') loadBrandRevenue();
         });
 
         // Custom date apply.
@@ -205,6 +207,7 @@
             refreshDashboard();
             const activeTab = $('.jesp-tab-btn.active').data('tab');
             if (activeTab === 'hero') loadHeroProducts();
+            if (activeTab === 'brand-revenue') loadBrandRevenue();
         });
     }
 
@@ -1178,8 +1181,6 @@
             } else if (tab === 'product-performance') {
                 loadOrders();
                 loadOrderChart();
-            } else if (tab === 'brand-revenue') {
-                loadBrandRevenue();
             }
         });
 
@@ -1210,8 +1211,6 @@
             const activeTab = $('#erp-orders-tabs .jesp-tab-btn.active').data('tab');
             if (activeTab === 'all-orders') {
                 loadAllOrders();
-            } else if (activeTab === 'brand-revenue') {
-                loadBrandRevenue();
             } else {
                 loadOrders();
                 loadOrderChart();
@@ -1223,8 +1222,6 @@
             const activeTab = $('#erp-orders-tabs .jesp-tab-btn.active').data('tab');
             if (activeTab === 'all-orders') {
                 loadAllOrders();
-            } else if (activeTab === 'brand-revenue') {
-                loadBrandRevenue();
             } else {
                 loadOrders();
                 loadOrderChart();
@@ -1557,10 +1554,7 @@
         const $body = $('#erp-brand-body');
         $body.html('<tr><td colspan="5" class="jesp-loading">' + (ERP.strings.loading || 'Loading...') + '</td></tr>');
 
-        ERP.ajax('erp_get_brand_revenue', {
-            date_from: $('#erp-orders-from').val() || '',
-            date_to:   $('#erp-orders-to').val() || '',
-        }).done(function (res) {
+        ERP.ajax('erp_get_brand_revenue', ERP.getDashRange()).done(function (res) {
             if (!res.success) {
                 $body.html('<tr><td colspan="5" class="jesp-loading">Error loading data.</td></tr>');
                 return;
