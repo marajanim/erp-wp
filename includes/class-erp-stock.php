@@ -175,7 +175,7 @@ class JESP_ERP_Stock
 
     /**
      * Get stock value per product with category filter.
-     * Returns items with stock * price calculations and totals.
+     * Values are calculated using the buying price (_jesp_buying_price post meta).
      */
     public static function get_stock_value($args = array())
     {
@@ -209,21 +209,21 @@ class JESP_ERP_Stock
                 p.ID as product_id,
                 p.post_title as product_name,
                 pm_sku.meta_value as sku,
-                COALESCE(pm_price.meta_value, 0) as price,
+                COALESCE(pm_buying.meta_value, 0) as buying_price,
                 COALESCE(SUM(CASE WHEN sl.location_type = 'warehouse' THEN sl.quantity ELSE 0 END), 0) as warehouse_qty,
                 COALESCE(SUM(CASE WHEN sl.location_type = 'sales_center' THEN sl.quantity ELSE 0 END), 0) as sales_center_qty,
                 COALESCE(SUM(sl.quantity), 0) as total_qty,
                 COALESCE(MAX(sl.min_stock), 0) as min_level,
-                COALESCE(SUM(sl.quantity), 0) * COALESCE(pm_price.meta_value, 0) as total_value,
-                COALESCE(SUM(CASE WHEN sl.location_type = 'warehouse' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_price.meta_value, 0) as warehouse_value,
-                COALESCE(SUM(CASE WHEN sl.location_type = 'sales_center' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_price.meta_value, 0) as sales_center_value
+                COALESCE(SUM(sl.quantity), 0) * COALESCE(pm_buying.meta_value, 0) as total_value,
+                COALESCE(SUM(CASE WHEN sl.location_type = 'warehouse' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_buying.meta_value, 0) as warehouse_value,
+                COALESCE(SUM(CASE WHEN sl.location_type = 'sales_center' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_buying.meta_value, 0) as sales_center_value
             FROM {$wpdb->posts} p
             LEFT JOIN {$wpdb->postmeta} pm_sku ON p.ID = pm_sku.post_id AND pm_sku.meta_key = '_sku'
-            LEFT JOIN {$wpdb->postmeta} pm_price ON p.ID = pm_price.post_id AND pm_price.meta_key = '_price'
+            LEFT JOIN {$wpdb->postmeta} pm_buying ON p.ID = pm_buying.post_id AND pm_buying.meta_key = '_jesp_buying_price'
             LEFT JOIN {$table} sl ON p.ID = sl.product_id
             {$join_category}
             WHERE {$where}
-            GROUP BY p.ID, p.post_title, pm_sku.meta_value, pm_price.meta_value
+            GROUP BY p.ID, p.post_title, pm_sku.meta_value, pm_buying.meta_value
             ORDER BY total_value DESC
             LIMIT %d OFFSET %d
         ";
@@ -238,15 +238,15 @@ class JESP_ERP_Stock
                 COALESCE(SUM(sub.sales_center_value), 0) as sales_center_total
             FROM (
                 SELECT
-                    COALESCE(SUM(sl.quantity), 0) * COALESCE(pm_price.meta_value, 0) as total_value,
-                    COALESCE(SUM(CASE WHEN sl.location_type = 'warehouse' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_price.meta_value, 0) as warehouse_value,
-                    COALESCE(SUM(CASE WHEN sl.location_type = 'sales_center' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_price.meta_value, 0) as sales_center_value
+                    COALESCE(SUM(sl.quantity), 0) * COALESCE(pm_buying.meta_value, 0) as total_value,
+                    COALESCE(SUM(CASE WHEN sl.location_type = 'warehouse' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_buying.meta_value, 0) as warehouse_value,
+                    COALESCE(SUM(CASE WHEN sl.location_type = 'sales_center' THEN sl.quantity ELSE 0 END), 0) * COALESCE(pm_buying.meta_value, 0) as sales_center_value
                 FROM {$wpdb->posts} p
-                LEFT JOIN {$wpdb->postmeta} pm_price ON p.ID = pm_price.post_id AND pm_price.meta_key = '_price'
+                LEFT JOIN {$wpdb->postmeta} pm_buying ON p.ID = pm_buying.post_id AND pm_buying.meta_key = '_jesp_buying_price'
                 LEFT JOIN {$table} sl ON p.ID = sl.product_id
                 {$join_category}
                 WHERE {$where}
-                GROUP BY p.ID, pm_price.meta_value
+                GROUP BY p.ID, pm_buying.meta_value
             ) sub
         ";
 

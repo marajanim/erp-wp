@@ -370,7 +370,7 @@
                 html += `<tr class="${rowClass}">
                     <td><strong>${ERP.esc(item.product_name)}</strong></td>
                     <td>${ERP.esc(item.sku || '—')}</td>
-                    <td>${ERP.formatMoney(item.price)}</td>
+                    <td>${item.buying_price > 0 ? ERP.formatMoney(item.buying_price) : '—'}</td>
                     <td>${item.warehouse_qty}</td>
                     <td>${item.sales_center_qty}</td>
                     <td><strong>${item.total_qty}</strong></td>

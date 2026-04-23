@@ -186,7 +186,7 @@
                             <tr>
                                 <th><?php esc_html_e('Product', 'jesp-erp'); ?></th>
                                 <th><?php esc_html_e('SKU', 'jesp-erp'); ?></th>
-                                <th><?php esc_html_e('Price', 'jesp-erp'); ?></th>
+                                <th><?php esc_html_e('Buying Price', 'jesp-erp'); ?></th>
                                 <th><?php esc_html_e('Warehouse', 'jesp-erp'); ?></th>
                                 <th><?php esc_html_e('Sales Center', 'jesp-erp'); ?></th>
                                 <th><?php esc_html_e('Total Qty', 'jesp-erp'); ?></th>
