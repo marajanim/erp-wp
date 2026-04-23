@@ -89,7 +89,7 @@
                 <p class="description" style="margin-top:12px;">
                     <?php esc_html_e( 'Stock Location values: "Warehouse" or "Sales Center". Defaults to Warehouse if omitted.', 'jesp-erp' ); ?>
                 </p>
-                <a href="<?php echo esc_url( JESP_ERP_PLUGIN_URL . 'assets/sample-import.csv' ); ?>" class="button" style="margin-top:12px;">
+                <a href="<?php echo esc_url( add_query_arg( array( 'action' => 'erp_download_sample_csv', 'nonce' => wp_create_nonce( 'jesp_erp_nonce' ) ), admin_url( 'admin-ajax.php' ) ) ); ?>" class="button" style="margin-top:12px;">
                     <span class="dashicons dashicons-download" style="margin-top:4px;"></span> <?php esc_html_e( 'Download Sample CSV', 'jesp-erp' ); ?>
                 </a>
             </div>

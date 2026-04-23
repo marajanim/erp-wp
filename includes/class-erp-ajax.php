@@ -58,6 +58,8 @@ class JESP_ERP_Ajax
             'erp_get_hero_products_list',
             // v8: Settings
             'erp_save_settings',
+            // v9: Sample CSV download
+            'erp_download_sample_csv',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -1016,6 +1018,36 @@ class JESP_ERP_Ajax
     /* ------------------------------------------------------------------ */
     /*  Brand Revenue                                                       */
     /* ------------------------------------------------------------------ */
+
+    /* ------------------------------------------------------------------ */
+    /*  v9: Sample CSV download                                           */
+    /* ------------------------------------------------------------------ */
+    public function erp_download_sample_csv()
+    {
+        check_ajax_referer('jesp_erp_nonce', 'nonce');
+
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="sample-import.csv"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF");
+
+        fputcsv($output, array('Product Name', 'SKU', 'Description', 'Price', 'Current Stock', 'Minimum Stock Level', 'Stock Location', 'Image URL'));
+        fputcsv($output, array('Widget A',     'WDG-001', 'A premium quality widget',         '29.99', '150', '20', 'Warehouse',    ''));
+        fputcsv($output, array('Widget B',     'WDG-002', 'Economy widget for daily use',      '14.99', '75',  '10', 'Sales Center', ''));
+        fputcsv($output, array('Gadget Pro',   'GDG-001', 'Advanced gadget with Bluetooth',    '89.99', '30',  '15', 'Warehouse',    ''));
+        fputcsv($output, array('Gadget Mini',  'GDG-002', 'Compact gadget for travel',         '49.99', '5',   '10', 'Warehouse',    ''));
+        fputcsv($output, array('Accessory Pack','ACC-001','Universal accessory bundle',         '19.99', '200', '25', 'Sales Center', ''));
+
+        fclose($output);
+        exit;
+    }
 
     private function detect_brand_taxonomy()
     {
