@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Admin menus, page routing, and asset enqueuing.
+ * Admin menus, page routing, asset enqueuing, and dashboard widget.
  */
 class JESP_ERP_Admin
 {
@@ -23,6 +23,7 @@ class JESP_ERP_Admin
     {
         add_action('admin_menu', array($this, 'register_menus'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
+        add_action('wp_dashboard_setup', array($this, 'register_dashboard_widget'));
     }
 
     /**
@@ -37,7 +38,7 @@ class JESP_ERP_Admin
             'jesp-erp',
             array($this, 'render_dashboard'),
             'dashicons-analytics',
-            56
+            1  // Position 1 = top of sidebar, above Dashboard.
         );
 
         $hidden = (array) get_option('jesp_erp_hidden_tabs', array());
@@ -51,6 +52,112 @@ class JESP_ERP_Admin
         if (!in_array('jesp-erp-customers', $hidden, true)) add_submenu_page('jesp-erp', __('Customers', 'jesp-erp'), __('Customers', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-customers', array($this, 'render_customers'));
         if (!in_array('jesp-erp-hero', $hidden, true))      add_submenu_page('jesp-erp', __('Hero Products', 'jesp-erp'), __('Hero Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-hero', array($this, 'render_hero_products'));
         add_submenu_page('jesp-erp', __('Settings', 'jesp-erp'), __('Settings', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-settings', array($this, 'render_settings'));
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  WordPress Dashboard widget                                         */
+    /* ------------------------------------------------------------------ */
+    public function register_dashboard_widget()
+    {
+        if (!current_user_can('manage_woocommerce')) {
+            return;
+        }
+        wp_add_dashboard_widget(
+            'jesp_erp_store_overview',
+            __('ERP Store Overview', 'jesp-erp'),
+            array($this, 'render_dashboard_widget')
+        );
+    }
+
+    public function render_dashboard_widget()
+    {
+        $today        = gmdate('Y-m-d');
+        $from_30      = gmdate('Y-m-d', strtotime('-30 days'));
+        $currency     = get_woocommerce_currency_symbol();
+
+        $month        = JESP_ERP_Orders::get_summary($from_30, $today);
+        $day          = JESP_ERP_Orders::get_summary($today, $today);
+        $low_stock    = JESP_ERP_Stock::get_low_stock_count();
+
+        global $wpdb;
+        $total_products = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish'"
+        );
+        $total_customers = (int) $wpdb->get_var(
+            'SELECT COUNT(*) FROM ' . JESP_ERP_Database::customer_purchases_table()
+        );
+
+        $fmt = function ($val) use ($currency) {
+            $n = (float) $val;
+            return $currency . ($n >= 1000 ? number_format($n / 1000, 1) . 'k' : number_format($n, 2));
+        };
+
+        $month_orders  = (int) ($month->total_orders  ?? 0);
+        $month_revenue = $fmt($month->total_revenue   ?? 0);
+        $day_orders    = (int) ($day->total_orders    ?? 0);
+        $day_revenue   = $fmt($day->total_revenue     ?? 0);
+        $warn_style    = $low_stock > 0 ? 'color:#dc2626;font-weight:700;' : '';
+        $warn_bg       = $low_stock > 0 ? 'background:#fff1f2;border-color:#fecaca;' : '';
+        ?>
+        <style>
+        #jesp_erp_store_overview .jesp-dw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+        #jesp_erp_store_overview .jesp-dw-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 13px;}
+        #jesp_erp_store_overview .jesp-dw-box.blue{background:#eef2ff;border-color:#c7d2fe;}
+        #jesp_erp_store_overview .jesp-dw-num{font-size:20px;font-weight:700;color:#1e293b;line-height:1.2;display:block;}
+        #jesp_erp_store_overview .jesp-dw-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;display:block;}
+        #jesp_erp_store_overview .jesp-dw-today{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 13px;margin-bottom:10px;text-align:center;}
+        #jesp_erp_store_overview .jesp-dw-today-num{font-size:17px;font-weight:700;color:#16a34a;display:block;}
+        #jesp_erp_store_overview .jesp-dw-today-lbl{font-size:10px;color:#15803d;text-transform:uppercase;display:block;}
+        #jesp_erp_store_overview .jesp-dw-section{font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px;}
+        #jesp_erp_store_overview .jesp-dw-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f1f5f9;padding-top:9px;margin-top:4px;}
+        #jesp_erp_store_overview .jesp-dw-link{color:#6366f1!important;font-size:12px;font-weight:600;text-decoration:none;}
+        #jesp_erp_store_overview .jesp-dw-link:hover{color:#4f46e5!important;}
+        #jesp_erp_store_overview .jesp-dw-ts{font-size:11px;color:#94a3b8;}
+        </style>
+
+        <p class="jesp-dw-section"><?php esc_html_e('Last 30 Days', 'jesp-erp'); ?></p>
+        <div class="jesp-dw-grid">
+            <div class="jesp-dw-box blue">
+                <span class="jesp-dw-num"><?php echo esc_html($month_revenue); ?></span>
+                <span class="jesp-dw-lbl"><?php esc_html_e('Revenue', 'jesp-erp'); ?></span>
+            </div>
+            <div class="jesp-dw-box blue">
+                <span class="jesp-dw-num"><?php echo esc_html($month_orders); ?></span>
+                <span class="jesp-dw-lbl"><?php esc_html_e('Orders', 'jesp-erp'); ?></span>
+            </div>
+            <div class="jesp-dw-box">
+                <span class="jesp-dw-num"><?php echo esc_html($total_products); ?></span>
+                <span class="jesp-dw-lbl"><?php esc_html_e('Products', 'jesp-erp'); ?></span>
+            </div>
+            <div class="jesp-dw-box" style="<?php echo esc_attr($warn_bg); ?>">
+                <span class="jesp-dw-num" style="<?php echo esc_attr($warn_style); ?>"><?php echo esc_html($low_stock); ?></span>
+                <span class="jesp-dw-lbl"><?php esc_html_e('Low Stock', 'jesp-erp'); ?></span>
+            </div>
+        </div>
+
+        <p class="jesp-dw-section"><?php esc_html_e("Today", 'jesp-erp'); ?></p>
+        <div class="jesp-dw-today">
+            <div>
+                <span class="jesp-dw-today-num"><?php echo esc_html($day_orders); ?></span>
+                <span class="jesp-dw-today-lbl"><?php esc_html_e('Orders', 'jesp-erp'); ?></span>
+            </div>
+            <div>
+                <span class="jesp-dw-today-num"><?php echo esc_html($day_revenue); ?></span>
+                <span class="jesp-dw-today-lbl"><?php esc_html_e('Revenue', 'jesp-erp'); ?></span>
+            </div>
+            <div>
+                <span class="jesp-dw-today-num"><?php echo esc_html($total_customers); ?></span>
+                <span class="jesp-dw-today-lbl"><?php esc_html_e('Customers', 'jesp-erp'); ?></span>
+            </div>
+        </div>
+
+        <div class="jesp-dw-footer">
+            <span class="jesp-dw-ts"><?php echo esc_html(gmdate('M j, Y g:i A')); ?></span>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=jesp-erp')); ?>" class="jesp-dw-link">
+                <?php esc_html_e('View Full Dashboard', 'jesp-erp'); ?> &rarr;
+            </a>
+        </div>
+        <?php
     }
 
     /**
