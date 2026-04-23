@@ -717,52 +717,65 @@ class JESP_ERP_Ajax
 
         $orders = wc_get_orders($args);
 
-        $filename = 'orders-export-' . gmdate('Y-m-d-His') . '.csv';
+        $filename = 'orders-export-' . gmdate('Y-m-d-His') . '.html';
 
         if (ob_get_level()) {
             ob_end_clean();
         }
 
-        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Type: text/html; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Pragma: no-cache');
         header('Expires: 0');
 
-        $output = fopen('php://output', 'w');
-        fwrite($output, "\xEF\xBB\xBF");
-
-        // Columns: SKU | Image (=IMAGE formula for preview) | Product Name | Order Number | Quantity
-        fputcsv($output, array('SKU', 'Image', 'Product Name', 'Order Number', 'Quantity'));
-
+        // Build rows
+        $rows = '';
         foreach ($orders as $order) {
             foreach ($order->get_items() as $item) {
-                $product = $item->get_product();
+                $product   = $item->get_product();
+                $sku       = $product ? esc_html($product->get_sku()) : '';
+                $name      = esc_html($item->get_name());
+                $order_num = esc_html($order->get_order_number());
+                $qty       = (int) $item->get_quantity();
 
-                $sku = $product ? $product->get_sku() : '';
-
-                // Build =IMAGE("url") formula so spreadsheet apps render a thumbnail.
-                $image_formula = '';
+                $img_html = '';
                 if ($product) {
                     $image_id = $product->get_image_id();
                     if ($image_id) {
                         $image_url = wp_get_attachment_image_url($image_id, 'thumbnail');
                         if ($image_url) {
-                            $image_formula = '=IMAGE("' . $image_url . '")';
+                            $img_html = '<img src="' . esc_url($image_url) . '" width="60" height="60" style="object-fit:cover;border-radius:4px;">';
                         }
                     }
                 }
 
-                fputcsv($output, array(
-                    $sku,
-                    $image_formula,
-                    $item->get_name(),
-                    $order->get_order_number(),
-                    $item->get_quantity(),
-                ));
+                $rows .= '<tr>'
+                    . '<td>' . $sku . '</td>'
+                    . '<td style="text-align:center">' . $img_html . '</td>'
+                    . '<td>' . $name . '</td>'
+                    . '<td style="text-align:center">' . $order_num . '</td>'
+                    . '<td style="text-align:center">' . $qty . '</td>'
+                    . '</tr>' . "\n";
             }
         }
 
-        fclose($output);
+        echo '<!DOCTYPE html><html><head><meta charset="utf-8">'
+            . '<title>Orders Export</title>'
+            . '<style>'
+            . 'body{font-family:Arial,sans-serif;font-size:13px;padding:20px;}'
+            . 'h2{margin-bottom:12px;}'
+            . 'table{border-collapse:collapse;width:100%;}'
+            . 'th,td{border:1px solid #ccc;padding:8px 12px;vertical-align:middle;}'
+            . 'th{background:#f4f4f4;font-weight:bold;}'
+            . 'tr:nth-child(even){background:#fafafa;}'
+            . '</style></head><body>'
+            . '<h2>Orders Export &mdash; ' . esc_html(gmdate('Y-m-d')) . '</h2>'
+            . '<table>'
+            . '<thead><tr>'
+            . '<th>SKU</th><th>Image</th><th>Product Name</th><th>Order #</th><th>Qty</th>'
+            . '</tr></thead>'
+            . '<tbody>' . $rows . '</tbody>'
+            . '</table></body></html>';
         exit;
     }
 }
