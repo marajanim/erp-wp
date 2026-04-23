@@ -1338,6 +1338,37 @@
 
             setTimeout(() => $btn.prop('disabled', false).html('<span class="dashicons dashicons-pdf" style="vertical-align:middle;margin-right:4px;font-size:16px;width:16px;height:16px;"></span> Export PDF'), 2000);
         });
+
+        // Export CSV — SKU, Product Name, Order Number, Quantity (no image).
+        $(document).on('click', '#erp-ao-export-csv', function () {
+            const $btn = $(this);
+            $btn.prop('disabled', true).text('Exporting...');
+
+            const $form = $('<form>', {
+                method: 'POST',
+                action: ERP.ajaxUrl,
+                target: '_blank',
+            });
+
+            const fields = {
+                action: 'erp_export_orders_csv',
+                nonce: ERP.nonce,
+                date_from: $('#erp-orders-from').val() || '',
+                date_to: $('#erp-orders-to').val() || '',
+                status: $('#erp-ao-status').val() || 'all',
+                search: $('#erp-ao-search').val() || '',
+            };
+
+            Object.keys(fields).forEach(key => {
+                $form.append($('<input>', { type: 'hidden', name: key, value: fields[key] }));
+            });
+
+            $('body').append($form);
+            $form.submit();
+            $form.remove();
+
+            setTimeout(() => $btn.prop('disabled', false).html('<span class="dashicons dashicons-spreadsheet" style="vertical-align:middle;margin-right:4px;font-size:16px;width:16px;height:16px;"></span> Export CSV'), 2000);
+        });
     }
 
     function loadOrders(page = 1) {

@@ -49,6 +49,7 @@ class JESP_ERP_Ajax
             'erp_get_all_orders',
             'erp_export_orders',
             'erp_export_orders_pdf',
+            'erp_export_orders_csv',
             // v5: Historical customer sync
             'erp_sync_customers',
         );
@@ -877,6 +878,69 @@ class JESP_ERP_Ajax
             . '</table>'
             . '<script>window.onload=function(){window.print();};</script>'
             . '</body></html>';
+        exit;
+    }
+
+    public function erp_export_orders_csv()
+    {
+        $this->verify();
+
+        $status    = sanitize_text_field($_POST['status'] ?? '');
+        $date_from = sanitize_text_field($_POST['date_from'] ?? '');
+        $date_to   = sanitize_text_field($_POST['date_to'] ?? '');
+        $search    = sanitize_text_field($_POST['search'] ?? '');
+
+        $args = array(
+            'limit'   => -1,
+            'orderby' => 'date',
+            'order'   => 'DESC',
+        );
+
+        if (!empty($status) && $status !== 'all') {
+            $args['status'] = $status;
+        } else {
+            $args['status'] = array('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending', 'wc-cancelled', 'wc-refunded', 'wc-failed');
+        }
+
+        if (!empty($date_from)) {
+            $args['date_created'] = $date_from . '...' . ($date_to ?: gmdate('Y-m-d'));
+        }
+
+        if (!empty($search) && is_numeric($search)) {
+            $args['post__in'] = array(absint($search));
+        }
+
+        $orders = wc_get_orders($args);
+
+        $filename = 'orders-' . gmdate('Y-m-d-His') . '.csv';
+
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF");
+
+        fputcsv($output, array('SKU', 'Product Name', 'Order Number', 'Quantity'));
+
+        foreach ($orders as $order) {
+            foreach ($order->get_items() as $item) {
+                $product = $item->get_product();
+                fputcsv($output, array(
+                    $product ? $product->get_sku() : '',
+                    $item->get_name(),
+                    $order->get_order_number(),
+                    $item->get_quantity(),
+                ));
+            }
+        }
+
+        fclose($output);
         exit;
     }
 }
