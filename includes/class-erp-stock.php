@@ -133,12 +133,15 @@ class JESP_ERP_Stock
             $total = (int)$wpdb->get_var($count_sql); // phpcs:ignore
         }
 
-        // Enrich items with thumbnail URLs.
+        // Enrich items with thumbnail and full-size image URLs.
         foreach ($items as &$item) {
             $item->thumbnail_url = '';
+            $item->full_image_url = '';
             if (!empty($item->thumbnail_id)) {
-                $img = wp_get_attachment_image_url((int)$item->thumbnail_id, 'thumbnail');
-                $item->thumbnail_url = $img ? $img : '';
+                $thumb = wp_get_attachment_image_url((int)$item->thumbnail_id, 'thumbnail');
+                $full  = wp_get_attachment_image_url((int)$item->thumbnail_id, 'large');
+                $item->thumbnail_url = $thumb ? $thumb : '';
+                $item->full_image_url = $full ? $full : ($thumb ? $thumb : '');
             }
         }
 

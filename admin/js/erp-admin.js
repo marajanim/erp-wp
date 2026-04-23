@@ -649,6 +649,34 @@
             });
         });
 
+        // ---- Image lightbox ---- //
+        $(document).on('click', '.jesp-thumb-zoomable', function () {
+            const src  = $(this).data('full');
+            const name = $(this).data('name');
+            if (!src) return;
+
+            if (!$('#jesp-img-lightbox').length) {
+                $('body').append(
+                    '<div id="jesp-img-lightbox" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;cursor:zoom-out;">' +
+                    '<div style="position:relative;max-width:90vw;max-height:90vh;text-align:center;">' +
+                    '<img id="jesp-lb-img" src="" alt="" style="max-width:90vw;max-height:80vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6);">' +
+                    '<p id="jesp-lb-name" style="color:#fff;margin-top:12px;font-size:15px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.8);"></p>' +
+                    '<button id="jesp-lb-close" style="position:absolute;top:-14px;right:-14px;width:30px;height:30px;border-radius:50%;border:none;background:#fff;cursor:pointer;font-size:18px;line-height:30px;">&times;</button>' +
+                    '</div></div>'
+                );
+                $(document).on('click', '#jesp-img-lightbox', function (e) {
+                    if (e.target === this || $(e.target).is('#jesp-lb-close')) $(this).hide();
+                });
+                $(document).on('keydown.jespLightbox', function (e) {
+                    if (e.key === 'Escape') $('#jesp-img-lightbox').hide();
+                });
+            }
+
+            $('#jesp-lb-img').attr('src', src);
+            $('#jesp-lb-name').text(name);
+            $('#jesp-img-lightbox').css('display', 'flex');
+        });
+
         // ---- Modal open (advanced adjustment) ---- //
         $(document).on('click', '.jesp-edit-stock', function () {
             const $row = $(this).closest('tr');
@@ -898,7 +926,7 @@
                     ? '<span class="jesp-badge jesp-badge-red">Low Stock</span>'
                     : '<span class="jesp-badge jesp-badge-green">Sufficient</span>';
                 const thumb = item.thumbnail_url
-                    ? `<img src="${item.thumbnail_url}" class="jesp-product-thumb" alt="">`
+                    ? `<img src="${item.thumbnail_url}" class="jesp-product-thumb jesp-thumb-zoomable" data-full="${item.full_image_url || item.thumbnail_url}" data-name="${ERP.esc(item.product_name)}" alt="" title="Click to enlarge" style="cursor:zoom-in;">`
                     : '<span class="dashicons dashicons-format-image" style="color:#cbd5e1;font-size:32px;width:40px;height:40px;"></span>';
 
                 const isActive = item.product_status === 'publish';
