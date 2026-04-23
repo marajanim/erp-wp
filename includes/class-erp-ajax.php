@@ -731,45 +731,35 @@ class JESP_ERP_Ajax
         $output = fopen('php://output', 'w');
         fwrite($output, "\xEF\xBB\xBF");
 
-        fputcsv($output, array(
-            'Order #',
-            'Date',
-            'Customer Name',
-            'Email',
-            'Phone',
-            'Address',
-            'Items',
-            'Subtotal',
-            'Tax',
-            'Shipping',
-            'Discount',
-            'Total',
-            'Payment Method',
-            'Status',
-        ));
+        // Columns: SKU | Image (=IMAGE formula for preview) | Product Name | Order Number | Quantity
+        fputcsv($output, array('SKU', 'Image', 'Product Name', 'Order Number', 'Quantity'));
 
         foreach ($orders as $order) {
-            $product_names = array();
             foreach ($order->get_items() as $item) {
-                $product_names[] = $item->get_name() . ' x' . $item->get_quantity();
-            }
+                $product = $item->get_product();
 
-            fputcsv($output, array(
-                $order->get_order_number(),
-                $order->get_date_created() ? $order->get_date_created()->format('Y-m-d H:i:s') : '',
-                $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-                $order->get_billing_email(),
-                $order->get_billing_phone(),
-                $order->get_billing_address_1() . ', ' . $order->get_billing_city() . ', ' . $order->get_billing_state() . ' ' . $order->get_billing_postcode(),
-                implode(' | ', $product_names),
-                $order->get_subtotal(),
-                $order->get_total_tax(),
-                $order->get_shipping_total(),
-                $order->get_discount_total(),
-                $order->get_total(),
-                $order->get_payment_method_title(),
-                wc_get_order_status_name($order->get_status()),
-            ));
+                $sku = $product ? $product->get_sku() : '';
+
+                // Build =IMAGE("url") formula so spreadsheet apps render a thumbnail.
+                $image_formula = '';
+                if ($product) {
+                    $image_id = $product->get_image_id();
+                    if ($image_id) {
+                        $image_url = wp_get_attachment_image_url($image_id, 'thumbnail');
+                        if ($image_url) {
+                            $image_formula = '=IMAGE("' . $image_url . '")';
+                        }
+                    }
+                }
+
+                fputcsv($output, array(
+                    $sku,
+                    $image_formula,
+                    $item->get_name(),
+                    $order->get_order_number(),
+                    $item->get_quantity(),
+                ));
+            }
         }
 
         fclose($output);

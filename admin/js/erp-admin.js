@@ -1134,10 +1134,9 @@
     let ordersChart = null;
 
     function initOrders() {
-        const today = new Date();
-        const from30 = new Date(Date.now() - 30 * 86400000);
-        $('#erp-orders-to').val(today.toISOString().slice(0, 10));
-        $('#erp-orders-from').val(from30.toISOString().slice(0, 10));
+        const todayStr = new Date().toISOString().slice(0, 10);
+        $('#erp-orders-from').val(todayStr);
+        $('#erp-orders-to').val(todayStr);
 
         // Tab switching.
         $('#erp-orders-tabs').on('click', '.jesp-tab-btn', function () {
@@ -1160,14 +1159,25 @@
 
         // Quick range buttons.
         $(document).on('click', '.jesp-range-btn', function () {
-            const days = parseInt($(this).data('days'));
-            const to = new Date();
-            const from = new Date(Date.now() - days * 86400000);
-            $('#erp-orders-to').val(to.toISOString().slice(0, 10));
-            $('#erp-orders-from').val(from.toISOString().slice(0, 10));
+            const range = $(this).data('range');
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
             $('.jesp-range-btn').removeClass('active');
             $(this).addClass('active');
-            // Refresh active tab.
+
+            if (range === 'today') {
+                $('#erp-orders-from').val(todayStr);
+                $('#erp-orders-to').val(todayStr);
+            } else if (range === 'yesterday') {
+                $('#erp-orders-from').val(yesterdayStr);
+                $('#erp-orders-to').val(yesterdayStr);
+            } else {
+                // Custom — user picks dates manually via From/To inputs, then hits Apply.
+                return;
+            }
+
+            // Refresh the active tab immediately for Today/Yesterday.
             const activeTab = $('#erp-orders-tabs .jesp-tab-btn.active').data('tab');
             if (activeTab === 'all-orders') {
                 loadAllOrders();

@@ -12,9 +12,9 @@
             <div class="jesp-filter-group">
                 <label><?php esc_html_e('Quick Range', 'jesp-erp'); ?></label>
                 <div class="jesp-btn-group">
-                    <button class="button jesp-range-btn" data-days="7"><?php esc_html_e('7 Days', 'jesp-erp'); ?></button>
-                    <button class="button jesp-range-btn active" data-days="30"><?php esc_html_e('30 Days', 'jesp-erp'); ?></button>
-                    <button class="button jesp-range-btn" data-days="90"><?php esc_html_e('90 Days', 'jesp-erp'); ?></button>
+                    <button class="button jesp-range-btn active" data-range="today"><?php esc_html_e('Today', 'jesp-erp'); ?></button>
+                    <button class="button jesp-range-btn" data-range="yesterday"><?php esc_html_e('Yesterday', 'jesp-erp'); ?></button>
+                    <button class="button jesp-range-btn" data-range="custom"><?php esc_html_e('Custom', 'jesp-erp'); ?></button>
                 </div>
             </div>
             <div class="jesp-filter-group">
