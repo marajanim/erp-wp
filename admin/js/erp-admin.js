@@ -138,6 +138,7 @@
         if (page === 'jesp-erp-orders') initOrders();
         if (page === 'jesp-erp-customers') initCustomers();
         if (page === 'jesp-erp-hero') initHeroProductsPage();
+        if (page === 'jesp-erp-settings') initSettings();
     });
 
     /* ====================================================================
@@ -1859,6 +1860,64 @@
 
             $('#erp-customers-list-view').hide();
             $('#erp-customer-detail-view').show();
+        });
+    }
+
+    /* ====================================================================
+       SETTINGS PAGE — Custom CSS editor
+       ==================================================================== */
+    function initSettings() {
+        let cmEditor = null;
+
+        // Upgrade the textarea to CodeMirror if WordPress code editor is available.
+        if (
+            typeof wp !== 'undefined' &&
+            wp.codeEditor &&
+            typeof jespErpCodeEditor !== 'undefined' &&
+            jespErpCodeEditor !== false
+        ) {
+            const editorConfig = $.extend(true, {}, jespErpCodeEditor, {
+                codemirror: {
+                    mode: 'css',
+                    lineNumbers: true,
+                    lineWrapping: true,
+                    indentUnit: 2,
+                    tabSize: 2,
+                    theme: 'default',
+                }
+            });
+            const instance = wp.codeEditor.initialize($('#jesp-custom-css-editor'), editorConfig);
+            cmEditor = instance.codemirror;
+        }
+
+        function getCss() {
+            return cmEditor ? cmEditor.getValue() : $('#jesp-custom-css-editor').val();
+        }
+
+        // Save button.
+        $('#jesp-settings-save').on('click', function () {
+            const $btn = $(this).prop('disabled', true).text('Saving...');
+            ERP.ajax('erp_save_settings', { custom_css: getCss() }).done(function (res) {
+                if (res.success) {
+                    ERP.toast(res.data.message || 'Saved!');
+                } else {
+                    ERP.toast(res.data?.message || ERP.strings.error || 'Error', 'error');
+                }
+            }).fail(function () {
+                ERP.toast('Network error.', 'error');
+            }).always(function () {
+                $btn.prop('disabled', false).text('Save Settings');
+            });
+        });
+
+        // Clear button.
+        $('#jesp-settings-clear').on('click', function () {
+            if (!confirm('Clear all custom CSS?')) return;
+            if (cmEditor) {
+                cmEditor.setValue('');
+            } else {
+                $('#jesp-custom-css-editor').val('');
+            }
         });
     }
 

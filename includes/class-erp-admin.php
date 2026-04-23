@@ -48,6 +48,7 @@ class JESP_ERP_Admin
         add_submenu_page('jesp-erp', __('Orders & Analytics', 'jesp-erp'), __('Orders & Analytics', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-orders', array($this, 'render_orders'));
         add_submenu_page('jesp-erp', __('Customers', 'jesp-erp'), __('Customers', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-customers', array($this, 'render_customers'));
         add_submenu_page('jesp-erp', __('Hero Products', 'jesp-erp'), __('Hero Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-hero', array($this, 'render_hero_products'));
+        add_submenu_page('jesp-erp', __('Settings', 'jesp-erp'), __('Settings', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-settings', array($this, 'render_settings'));
     }
 
     /**
@@ -64,6 +65,7 @@ class JESP_ERP_Admin
             'erp-manager_page_jesp-erp-orders',
             'erp-manager_page_jesp-erp-customers',
             'erp-manager_page_jesp-erp-hero',
+            'erp-manager_page_jesp-erp-settings',
         );
 
         if (!in_array($hook, $plugin_pages, true)) {
@@ -76,6 +78,18 @@ class JESP_ERP_Admin
             array(),
             JESP_ERP_VERSION
         );
+
+        // Inject saved custom CSS on all plugin pages.
+        $custom_css = get_option('jesp_erp_custom_css', '');
+        if (!empty($custom_css)) {
+            wp_add_inline_style('jesp-erp-admin', $custom_css);
+        }
+
+        // Load WordPress code editor (CodeMirror) only on the settings page.
+        if ($hook === 'erp-manager_page_jesp-erp-settings') {
+            $editor_settings = wp_enqueue_code_editor(array('type' => 'text/css'));
+            wp_localize_script('jquery', 'jespErpCodeEditor', $editor_settings);
+        }
 
         // WordPress media uploader (for Quick Edit image selection).
         wp_enqueue_media();
@@ -93,7 +107,7 @@ class JESP_ERP_Admin
             'jesp-erp-admin',
             JESP_ERP_PLUGIN_URL . 'admin/js/erp-admin.js',
             array('jquery', 'chartjs'),
-            JESP_ERP_VERSION . '.11',
+            JESP_ERP_VERSION . '.12',
             true
         );
 
@@ -154,5 +168,9 @@ class JESP_ERP_Admin
     public function render_hero_products()
     {
         include JESP_ERP_PLUGIN_DIR . 'admin/views/hero-products.php';
+    }
+    public function render_settings()
+    {
+        include JESP_ERP_PLUGIN_DIR . 'admin/views/settings.php';
     }
 }

@@ -56,6 +56,8 @@ class JESP_ERP_Ajax
             'erp_get_brand_revenue',
             // v7: Hero products full list
             'erp_get_hero_products_list',
+            // v8: Settings
+            'erp_save_settings',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -984,6 +986,22 @@ class JESP_ERP_Ajax
 
         fclose($output);
         exit;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  v8: Settings — save custom CSS                                    */
+    /* ------------------------------------------------------------------ */
+    public function erp_save_settings()
+    {
+        $this->verify();
+
+        // Strip HTML tags but preserve CSS content; remove any </style> escape attempt.
+        $css = wp_strip_all_tags(wp_unslash($_POST['custom_css'] ?? ''));
+        $css = str_replace('</style', '', $css);
+
+        update_option('jesp_erp_custom_css', $css);
+
+        wp_send_json_success(array('message' => __('Settings saved.', 'jesp-erp')));
     }
 
     /* ------------------------------------------------------------------ */
