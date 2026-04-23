@@ -48,6 +48,7 @@ class JESP_ERP_Ajax
             // v4: All Orders tab
             'erp_get_all_orders',
             'erp_export_orders',
+            'erp_export_orders_pdf',
             // v5: Historical customer sync
             'erp_sync_customers',
         );
@@ -776,6 +777,106 @@ class JESP_ERP_Ajax
             . '</tr></thead>'
             . '<tbody>' . $rows . '</tbody>'
             . '</table></body></html>';
+        exit;
+    }
+
+    public function erp_export_orders_pdf()
+    {
+        $this->verify();
+
+        $status    = sanitize_text_field($_POST['status'] ?? '');
+        $date_from = sanitize_text_field($_POST['date_from'] ?? '');
+        $date_to   = sanitize_text_field($_POST['date_to'] ?? '');
+        $search    = sanitize_text_field($_POST['search'] ?? '');
+
+        $args = array(
+            'limit'   => -1,
+            'orderby' => 'date',
+            'order'   => 'DESC',
+        );
+
+        if (!empty($status) && $status !== 'all') {
+            $args['status'] = $status;
+        } else {
+            $args['status'] = array('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending', 'wc-cancelled', 'wc-refunded', 'wc-failed');
+        }
+
+        if (!empty($date_from)) {
+            $args['date_created'] = $date_from . '...' . ($date_to ?: gmdate('Y-m-d'));
+        }
+
+        if (!empty($search) && is_numeric($search)) {
+            $args['post__in'] = array(absint($search));
+        }
+
+        $orders = wc_get_orders($args);
+
+        $rows = '';
+        foreach ($orders as $order) {
+            foreach ($order->get_items() as $item) {
+                $product   = $item->get_product();
+                $sku       = $product ? esc_html($product->get_sku()) : '';
+                $name      = esc_html($item->get_name());
+                $order_num = esc_html($order->get_order_number());
+                $qty       = (int) $item->get_quantity();
+
+                $img_html = '';
+                if ($product) {
+                    $image_id = $product->get_image_id();
+                    if ($image_id) {
+                        $image_url = wp_get_attachment_image_url($image_id, 'thumbnail');
+                        if ($image_url) {
+                            $img_html = '<img src="' . esc_url($image_url) . '" width="50" height="50" style="object-fit:cover;border-radius:3px;">';
+                        }
+                    }
+                }
+
+                $rows .= '<tr>'
+                    . '<td>' . $sku . '</td>'
+                    . '<td style="text-align:center">' . $img_html . '</td>'
+                    . '<td>' . $name . '</td>'
+                    . '<td style="text-align:center">' . $order_num . '</td>'
+                    . '<td style="text-align:center">' . $qty . '</td>'
+                    . '</tr>' . "\n";
+            }
+        }
+
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/html; charset=utf-8');
+
+        echo '<!DOCTYPE html><html><head><meta charset="utf-8">'
+            . '<title>Orders PDF &mdash; ' . esc_html(gmdate('Y-m-d')) . '</title>'
+            . '<style>'
+            . 'body{font-family:Arial,sans-serif;font-size:12px;margin:20px;}'
+            . 'h2{font-size:16px;margin-bottom:10px;}'
+            . '.meta{color:#555;font-size:11px;margin-bottom:16px;}'
+            . 'table{border-collapse:collapse;width:100%;page-break-inside:auto;}'
+            . 'thead{display:table-header-group;}'
+            . 'tr{page-break-inside:avoid;page-break-after:auto;}'
+            . 'th,td{border:1px solid #bbb;padding:6px 10px;vertical-align:middle;}'
+            . 'th{background:#eef2f7;font-weight:bold;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}'
+            . 'tr:nth-child(even){background:#f9f9f9;}'
+            . '@media print{'
+            . 'body{margin:0;}'
+            . '.no-print{display:none;}'
+            . '}'
+            . '</style></head><body>'
+            . '<div class="no-print" style="margin-bottom:16px;">'
+            . '<button onclick="window.print()" style="padding:8px 18px;font-size:13px;cursor:pointer;background:#2271b1;color:#fff;border:none;border-radius:4px;">Print / Save as PDF</button>'
+            . '</div>'
+            . '<h2>Orders Report</h2>'
+            . '<p class="meta">Generated: ' . esc_html(gmdate('Y-m-d H:i')) . '</p>'
+            . '<table>'
+            . '<thead><tr>'
+            . '<th>SKU</th><th>Image</th><th>Product Name</th><th>Order #</th><th>Qty</th>'
+            . '</tr></thead>'
+            . '<tbody>' . $rows . '</tbody>'
+            . '</table>'
+            . '<script>window.onload=function(){window.print();};</script>'
+            . '</body></html>';
         exit;
     }
 }

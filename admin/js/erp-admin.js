@@ -1305,7 +1305,38 @@
             $form.submit();
             $form.remove();
 
-            setTimeout(() => $btn.prop('disabled', false).html('<span class="dashicons dashicons-download" style="vertical-align:middle;margin-right:4px;font-size:16px;width:16px;height:16px;"></span> Export CSV'), 2000);
+            setTimeout(() => $btn.prop('disabled', false).html('<span class="dashicons dashicons-download" style="vertical-align:middle;margin-right:4px;font-size:16px;width:16px;height:16px;"></span> Export HTML'), 2000);
+        });
+
+        // Export PDF — opens a print-ready page in a new tab; browser print dialog appears automatically.
+        $(document).on('click', '#erp-ao-export-pdf', function () {
+            const $btn = $(this);
+            $btn.prop('disabled', true).text('Preparing...');
+
+            const $form = $('<form>', {
+                method: 'POST',
+                action: ERP.ajaxUrl,
+                target: '_blank',
+            });
+
+            const fields = {
+                action: 'erp_export_orders_pdf',
+                nonce: ERP.nonce,
+                date_from: $('#erp-orders-from').val() || '',
+                date_to: $('#erp-orders-to').val() || '',
+                status: $('#erp-ao-status').val() || 'all',
+                search: $('#erp-ao-search').val() || '',
+            };
+
+            Object.keys(fields).forEach(key => {
+                $form.append($('<input>', { type: 'hidden', name: key, value: fields[key] }));
+            });
+
+            $('body').append($form);
+            $form.submit();
+            $form.remove();
+
+            setTimeout(() => $btn.prop('disabled', false).html('<span class="dashicons dashicons-pdf" style="vertical-align:middle;margin-right:4px;font-size:16px;width:16px;height:16px;"></span> Export PDF'), 2000);
         });
     }
 

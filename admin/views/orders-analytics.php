@@ -71,10 +71,14 @@
                         <option value="100">100</option>
                     </select>
                 </div>
-                <div class="jesp-filter-group" style="display:flex;align-items:flex-end;">
+                <div class="jesp-filter-group" style="display:flex;align-items:flex-end;gap:8px;">
                     <button class="button button-primary" id="erp-ao-export" style="white-space:nowrap;">
                         <span class="dashicons dashicons-download" style="vertical-align:middle;margin-right:4px;font-size:16px;width:16px;height:16px;"></span>
-                        <?php esc_html_e('Export CSV', 'jesp-erp'); ?>
+                        <?php esc_html_e('Export HTML', 'jesp-erp'); ?>
+                    </button>
+                    <button class="button button-secondary" id="erp-ao-export-pdf" style="white-space:nowrap;">
+                        <span class="dashicons dashicons-pdf" style="vertical-align:middle;margin-right:4px;font-size:16px;width:16px;height:16px;"></span>
+                        <?php esc_html_e('Export PDF', 'jesp-erp'); ?>
                     </button>
                 </div>
             </div>
