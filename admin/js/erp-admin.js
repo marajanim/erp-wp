@@ -1121,8 +1121,8 @@
         const $fileInput = $('#erp-csv-file');
         let selectedFile = null;
 
-        $('#erp-browse-btn').on('click', function (e) { e.stopPropagation(); $fileInput.trigger('click'); });
-        $zone.on('click', function () { $fileInput.trigger('click'); });
+        $('#erp-browse-btn').on('click', function (e) { e.stopPropagation(); $fileInput[0].click(); });
+        $zone.on('click', function () { $fileInput[0].click(); });
 
         $fileInput.on('change', function () {
             if (this.files.length) selectFile(this.files[0]);
