@@ -181,16 +181,20 @@ class JESP_ERP_Invoices {
     /* ------------------------------------------------------------------ */
     public static function generate_print_html( $invoice ) {
         $store_name    = get_bloginfo( 'name' );
+        $store_tagline = get_bloginfo( 'description' );
         $currency      = get_woocommerce_currency_symbol();
-        $store_address = '';
 
-        if ( class_exists( 'WooCommerce' ) && WC()->countries ) {
-            $parts = array_filter( array(
-                WC()->countries->get_base_address(),
-                WC()->countries->get_base_city(),
-                WC()->countries->get_base_postcode(),
-            ) );
-            $store_address = implode( ', ', $parts );
+        // Resolve site logo (theme custom logo → site icon → text fallback).
+        $logo_url       = '';
+        $custom_logo_id = get_theme_mod( 'custom_logo' );
+        if ( $custom_logo_id ) {
+            $logo_src = wp_get_attachment_image_src( $custom_logo_id, array( 160, 80 ) );
+            if ( $logo_src ) {
+                $logo_url = $logo_src[0];
+            }
+        }
+        if ( ! $logo_url ) {
+            $logo_url = get_site_icon_url( 80 );
         }
 
         $fmt = function ( $val ) use ( $currency ) {
@@ -207,144 +211,174 @@ class JESP_ERP_Invoices {
         }
         $after_discount = $subtotal - $discount_amt;
         $tax_amt        = round( $after_discount * ( (float) $invoice->tax_rate / 100 ), 2 );
-
-        $status_label = $invoice->status === 'paid' ? 'PAID' : 'DRAFT';
-        $status_color = $invoice->status === 'paid' ? '#16a34a' : '#64748b';
+        $is_paid        = $invoice->status === 'paid';
 
         ob_start();
         ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <title>Invoice <?php echo esc_html( $invoice->invoice_number ); ?> — <?php echo esc_html( $store_name ); ?></title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1e293b;background:#fff;padding:32px 40px;}
-.inv-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:26px;padding-bottom:18px;border-bottom:3px solid #6366f1;}
-.inv-store-name{font-size:22px;font-weight:700;color:#6366f1;margin-bottom:4px;}
-.inv-store-sub{font-size:11px;color:#64748b;}
-.inv-title-block{text-align:right;}
-.inv-title{font-size:30px;font-weight:700;letter-spacing:2px;color:#1e293b;}
-.inv-num{font-size:13px;color:#64748b;margin-top:4px;}
-.inv-badge{display:inline-block;margin-top:8px;padding:3px 14px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;}
-.inv-parties{display:flex;gap:20px;margin-bottom:22px;}
-.inv-party{flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;background:#f8fafc;}
-.inv-party h4{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
-.inv-party p{font-size:13px;line-height:1.8;}
-.inv-party strong{display:block;font-size:14px;color:#1e293b;margin-bottom:2px;}
-table{width:100%;border-collapse:collapse;margin-bottom:20px;}
-thead{background:#f1f5f9;}
-th{padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e2e8f0;}
-th.r{text-align:right;}
-td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;font-size:13px;}
-td.r{text-align:right;}
-tbody tr:last-child td{border-bottom:none;}
-.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:20px;}
-.totals{width:300px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;}
-.total-row{display:flex;justify-content:space-between;padding:8px 14px;font-size:13px;border-bottom:1px solid #f1f5f9;}
-.total-row:last-child{border-bottom:none;}
-.total-row.grand{background:#6366f1;color:#fff;font-size:15px;font-weight:700;}
-.total-row .lbl{color:#64748b;}
-.total-row.grand .lbl{color:rgba(255,255,255,.8);}
-.notes{border:1px solid #e2e8f0;border-radius:6px;padding:12px 16px;margin-bottom:22px;background:#f8fafc;}
-.notes h4{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
-.notes p{font-size:12px;color:#64748b;line-height:1.7;}
-.inv-footer{text-align:center;font-size:11px;color:#94a3b8;padding-top:14px;border-top:1px solid #f1f5f9;}
-.print-bar{text-align:center;margin-bottom:22px;}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f0f0f0;margin:0;padding:20px;}
+.invoice-box{max-width:800px;margin:auto;background:#fff;padding:40px;border:1px solid #ddd;box-shadow:0 0 10px rgba(0,0,0,.1);}
+.header{display:flex;justify-content:space-between;align-items:center;}
+.title{font-size:40px;font-weight:bold;color:#2c3e50;}
+.logo img{max-height:80px;max-width:160px;object-fit:contain;}
+.logo-text{font-size:20px;font-weight:700;color:#2c3e50;}
+.company-name{text-align:center;margin:20px 0;}
+.company-name h1{margin:0;letter-spacing:2px;font-size:22px;}
+.tagline{background:#e0e0e0;padding:2px 15px;border-radius:10px;font-size:14px;font-weight:bold;}
+.meta-info,.address-container{display:flex;justify-content:space-between;margin-top:30px;line-height:1.6;}
+.address-block h3{margin-bottom:5px;border-bottom:2px solid #333;display:inline-block;}
+.blue-text{color:#0044cc;}
+.items-table{width:100%;border-collapse:collapse;margin-top:30px;}
+.items-table th,.items-table td{border:1px solid #333;padding:10px;text-align:left;}
+.items-table thead{background:#f9f9f9;}
+.center{text-align:center;}
+.label{font-weight:bold;}
+.footer{margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end;}
+.stamp{border:3px solid #b22222;color:#b22222;padding:5px 10px;font-weight:bold;transform:rotate(-15deg);display:inline-block;margin-left:10px;text-transform:uppercase;font-size:14px;}
+.cursive{font-family:'Brush Script MT',cursive;font-size:24px;}
+.print-bar{text-align:center;margin-bottom:20px;}
 .print-bar button{padding:8px 20px;font-size:13px;border:none;border-radius:6px;cursor:pointer;margin:0 4px;}
-.print-bar .btn-p{background:#6366f1;color:#fff;}
-.print-bar .btn-c{background:#f1f5f9;color:#374151;}
-@media print{.print-bar{display:none;} body{padding:0;}}
+.btn-p{background:#2c3e50;color:#fff;}
+.btn-c{background:#e0e0e0;color:#333;}
+.notes-block{margin-top:20px;padding:12px 16px;border:1px solid #ddd;background:#fafafa;}
+.notes-block strong{display:block;margin-bottom:4px;}
+@media print{.print-bar{display:none;}body{background:#fff;padding:0;}}
 </style>
 </head>
 <body>
+
 <div class="print-bar">
-    <button class="btn-p" onclick="window.print()">🖨 Print Invoice</button>
-    <button class="btn-c" onclick="window.close()">✕ Close</button>
+    <button class="btn-p" onclick="window.print()">&#128438; Print Invoice</button>
+    <button class="btn-c" onclick="window.close()">&#10005; Close</button>
 </div>
 
-<div class="inv-header">
-    <div>
-        <div class="inv-store-name"><?php echo esc_html( $store_name ); ?></div>
-        <?php if ( $store_address ) : ?><div class="inv-store-sub"><?php echo esc_html( $store_address ); ?></div><?php endif; ?>
-    </div>
-    <div class="inv-title-block">
-        <div class="inv-title">INVOICE</div>
-        <div class="inv-num"><?php echo esc_html( $invoice->invoice_number ); ?></div>
-        <span class="inv-badge" style="background:<?php echo esc_attr( $status_color ); ?>;"><?php echo esc_html( $status_label ); ?></span>
-    </div>
-</div>
+<div class="invoice-box">
 
-<div class="inv-parties">
-    <div class="inv-party">
-        <h4>Bill To</h4>
-        <p>
-            <strong><?php echo esc_html( $invoice->customer_name ?: '—' ); ?></strong>
-            <?php if ( $invoice->customer_phone ) : ?><?php echo esc_html( $invoice->customer_phone ); ?><br><?php endif; ?>
-            <?php if ( $invoice->customer_email ) : ?><?php echo esc_html( $invoice->customer_email ); ?><br><?php endif; ?>
-            <?php if ( $invoice->customer_address ) : ?><?php echo nl2br( esc_html( $invoice->customer_address ) ); ?><?php endif; ?>
-        </p>
-    </div>
-    <div class="inv-party">
-        <h4>Invoice Details</h4>
-        <p>
-            <strong><?php echo esc_html( $invoice->invoice_number ); ?></strong>
-            <b>Date:</b> <?php echo esc_html( wp_date( 'F j, Y', strtotime( $invoice->invoice_date ) ) ); ?><br>
-            <b>Status:</b> <?php echo esc_html( ucfirst( $invoice->status ) ); ?>
-        </p>
-    </div>
-</div>
-
-<table>
-    <thead>
-        <tr>
-            <th style="width:36px;">#</th>
-            <th>Product / Description</th>
-            <th style="width:110px;">SKU</th>
-            <th class="r" style="width:70px;">Qty</th>
-            <th class="r" style="width:120px;">Unit Price</th>
-            <th class="r" style="width:120px;">Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php $i = 1; foreach ( $invoice->items as $item ) : ?>
-        <tr>
-            <td style="color:#94a3b8;"><?php echo esc_html( $i++ ); ?></td>
-            <td><?php echo esc_html( $item->product_name ); ?></td>
-            <td style="color:#94a3b8;"><?php echo esc_html( $item->sku ?: '—' ); ?></td>
-            <td class="r"><?php echo esc_html( rtrim( rtrim( number_format( (float) $item->qty, 2 ), '0' ), '.' ) ); ?></td>
-            <td class="r"><?php echo esc_html( $fmt( $item->unit_price ) ); ?></td>
-            <td class="r" style="font-weight:600;"><?php echo esc_html( $fmt( $item->line_total ) ); ?></td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
-
-<div class="totals-wrap">
-    <div class="totals">
-        <div class="total-row"><span class="lbl">Subtotal</span><span><?php echo esc_html( $fmt( $subtotal ) ); ?></span></div>
-        <?php if ( $discount_amt > 0 ) : ?>
-        <div class="total-row">
-            <span class="lbl">Discount<?php echo $invoice->discount_type === 'percentage' ? ' (' . esc_html( $invoice->discount_value ) . '%)' : ''; ?></span>
-            <span style="color:#dc2626;">-<?php echo esc_html( $fmt( $discount_amt ) ); ?></span>
+    <div class="header">
+        <div class="title">INVOICE</div>
+        <div class="logo">
+            <?php if ( $logo_url ) : ?>
+            <img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( $store_name ); ?>">
+            <?php else : ?>
+            <span class="logo-text"><?php echo esc_html( $store_name ); ?></span>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
-        <?php if ( (float) $invoice->tax_rate > 0 ) : ?>
-        <div class="total-row"><span class="lbl">Tax (<?php echo esc_html( $invoice->tax_rate ); ?>%)</span><span><?php echo esc_html( $fmt( $tax_amt ) ); ?></span></div>
-        <?php endif; ?>
-        <div class="total-row grand"><span class="lbl">TOTAL</span><span><?php echo esc_html( $fmt( $invoice->total ) ); ?></span></div>
     </div>
-</div>
 
-<?php if ( ! empty( $invoice->notes ) ) : ?>
-<div class="notes">
-    <h4>Notes</h4>
-    <p><?php echo nl2br( esc_html( $invoice->notes ) ); ?></p>
-</div>
-<?php endif; ?>
+    <div class="company-name">
+        <h1><?php echo esc_html( strtoupper( $store_name ) ); ?></h1>
+        <?php if ( $store_tagline ) : ?>
+        <span class="tagline"><?php echo esc_html( strtoupper( $store_tagline ) ); ?></span>
+        <?php endif; ?>
+    </div>
 
-<div class="inv-footer">Thank you for your business! &bull; <?php echo esc_html( $store_name ); ?></div>
+    <div class="meta-info">
+        <div class="meta-left">
+            <p><strong>Date:</strong> <?php echo esc_html( wp_date( 'F j, Y', strtotime( $invoice->invoice_date ) ) ); ?></p>
+            <?php if ( $invoice->customer_email ) : ?>
+            <p><strong>Email:</strong> <?php echo esc_html( $invoice->customer_email ); ?></p>
+            <?php endif; ?>
+        </div>
+        <div class="meta-right">
+            <p><strong>Invoice No:</strong> <?php echo esc_html( $invoice->invoice_number ); ?></p>
+            <?php if ( $invoice->customer_phone ) : ?>
+            <p><strong>Phone:</strong> <?php echo esc_html( $invoice->customer_phone ); ?></p>
+            <?php endif; ?>
+            <p><strong>Status:</strong> <?php echo esc_html( ucfirst( $invoice->status ) ); ?></p>
+        </div>
+    </div>
+
+    <div class="address-container">
+        <div class="address-block">
+            <h3>Issued to</h3>
+            <p><?php echo esc_html( $invoice->customer_name ?: '—' ); ?></p>
+            <?php if ( $invoice->customer_address ) : ?>
+            <p><?php echo nl2br( esc_html( $invoice->customer_address ) ); ?></p>
+            <?php endif; ?>
+            <?php if ( $invoice->customer_phone ) : ?>
+            <p class="blue-text"><?php echo esc_html( $invoice->customer_phone ); ?></p>
+            <?php endif; ?>
+            <?php if ( $invoice->customer_email ) : ?>
+            <p><?php echo esc_html( $invoice->customer_email ); ?></p>
+            <?php endif; ?>
+        </div>
+        <div class="address-block">
+            <h3>Ship to</h3>
+            <p><?php echo esc_html( $invoice->customer_name ?: '—' ); ?></p>
+            <?php if ( $invoice->customer_address ) : ?>
+            <p><?php echo nl2br( esc_html( $invoice->customer_address ) ); ?></p>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Product</th>
+                <th class="center">Quantity</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ( $invoice->items as $item ) : ?>
+            <tr>
+                <td><?php echo esc_html( $item->sku ?: '—' ); ?></td>
+                <td><?php echo esc_html( $item->product_name ); ?></td>
+                <td class="center"><?php echo esc_html( rtrim( rtrim( number_format( (float) $item->qty, 2 ), '0' ), '.' ) ); ?></td>
+                <td><?php echo esc_html( $fmt( $item->line_total ) ); ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="label">Subtotal:</td>
+                <td><?php echo esc_html( $fmt( $subtotal ) ); ?></td>
+            </tr>
+            <?php if ( $discount_amt > 0 ) : ?>
+            <tr>
+                <td colspan="3" class="label">Discount<?php echo $invoice->discount_type === 'percentage' ? ' (' . esc_html( $invoice->discount_value ) . '%)' : ''; ?>:</td>
+                <td style="color:#b22222;">- <?php echo esc_html( $fmt( $discount_amt ) ); ?></td>
+            </tr>
+            <?php endif; ?>
+            <?php if ( (float) $invoice->tax_rate > 0 ) : ?>
+            <tr>
+                <td colspan="3" class="label">Tax (<?php echo esc_html( $invoice->tax_rate ); ?>%):</td>
+                <td><?php echo esc_html( $fmt( $tax_amt ) ); ?></td>
+            </tr>
+            <?php endif; ?>
+            <tr>
+                <td colspan="3" class="label">Total:</td>
+                <td><strong><?php echo esc_html( $fmt( (float) $invoice->total ) ); ?></strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <?php if ( ! empty( $invoice->notes ) ) : ?>
+    <div class="notes-block">
+        <strong>Notes:</strong>
+        <span><?php echo nl2br( esc_html( $invoice->notes ) ); ?></span>
+    </div>
+    <?php endif; ?>
+
+    <div class="footer">
+        <div class="payment-info">
+            <span>PAYMENT INFO:</span>
+            <?php if ( $is_paid ) : ?>
+            <div class="stamp">PAYMENT RECEIVED</div>
+            <?php endif; ?>
+        </div>
+        <div class="store-sig">
+            STORE: <span class="cursive"><?php echo esc_html( $store_name ); ?></span>
+        </div>
+    </div>
+
+</div>
 </body>
 </html>
         <?php
