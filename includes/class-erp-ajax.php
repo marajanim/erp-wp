@@ -156,7 +156,7 @@ class JESP_ERP_Ajax
             wp_send_json_error(array('message' => __('Product not found.', 'jesp-erp')));
         }
 
-        $allowed_fields = array('sku', 'regular_price', 'sale_price', 'warehouse_stock', 'sales_center_stock', 'min_stock');
+        $allowed_fields = array('sku', 'regular_price', 'sale_price', 'buying_price', 'warehouse_stock', 'sales_center_stock', 'min_stock');
         if (!in_array($field, $allowed_fields, true)) {
             wp_send_json_error(array('message' => __('Invalid field.', 'jesp-erp')));
         }
@@ -218,6 +218,20 @@ class JESP_ERP_Ajax
                 $min = absint($value);
                 JESP_ERP_Stock::update_min_stock($product_id, 'warehouse', $min);
                 wp_send_json_success(array('field' => $field, 'value' => $min, 'message' => __('Min stock updated.', 'jesp-erp')));
+                break;
+
+            case 'buying_price':
+                $price = $value === '' ? '' : floatval($value);
+                if (is_numeric($price) && $price < 0) {
+                    wp_send_json_error(array('message' => __('Buying price cannot be negative.', 'jesp-erp')));
+                }
+                if ($price === '' || $price == 0) {
+                    delete_post_meta($product_id, '_jesp_buying_price');
+                    wp_send_json_success(array('field' => $field, 'value' => '', 'message' => __('Buying price cleared.', 'jesp-erp')));
+                } else {
+                    update_post_meta($product_id, '_jesp_buying_price', (string)$price);
+                    wp_send_json_success(array('field' => $field, 'value' => (string)$price, 'message' => __('Buying price updated.', 'jesp-erp')));
+                }
                 break;
         }
     }

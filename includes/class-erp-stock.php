@@ -88,7 +88,7 @@ class JESP_ERP_Stock
                 pm_reg.meta_value as regular_price,
                 pm_sale.meta_value as sale_price,
                 pm_img.meta_value as thumbnail_id,
-                pm_wc_stock.meta_value as wc_stock,
+                pm_buying.meta_value as buying_price,
                 COALESCE(SUM(CASE WHEN sl.location_type = 'warehouse' THEN sl.quantity ELSE 0 END), 0) as warehouse_qty,
                 COALESCE(SUM(CASE WHEN sl.location_type = 'sales_center' THEN sl.quantity ELSE 0 END), 0) as sales_center_qty,
                 COALESCE(SUM(sl.quantity), 0) as total_qty,
@@ -99,11 +99,11 @@ class JESP_ERP_Stock
             LEFT JOIN {$wpdb->postmeta} pm_reg ON p.ID = pm_reg.post_id AND pm_reg.meta_key = '_regular_price'
             LEFT JOIN {$wpdb->postmeta} pm_sale ON p.ID = pm_sale.post_id AND pm_sale.meta_key = '_sale_price'
             LEFT JOIN {$wpdb->postmeta} pm_img ON p.ID = pm_img.post_id AND pm_img.meta_key = '_thumbnail_id'
-            LEFT JOIN {$wpdb->postmeta} pm_wc_stock ON p.ID = pm_wc_stock.post_id AND pm_wc_stock.meta_key = '_stock'
+            LEFT JOIN {$wpdb->postmeta} pm_buying ON p.ID = pm_buying.post_id AND pm_buying.meta_key = '_jesp_buying_price'
             LEFT JOIN {$table} sl ON p.ID = sl.product_id
             {$join_category}
             WHERE {$where}
-            GROUP BY p.ID, p.post_title, p.post_status, pm_sku.meta_value, pm_price.meta_value, pm_reg.meta_value, pm_sale.meta_value, pm_img.meta_value, pm_wc_stock.meta_value
+            GROUP BY p.ID, p.post_title, p.post_status, pm_sku.meta_value, pm_price.meta_value, pm_reg.meta_value, pm_sale.meta_value, pm_img.meta_value, pm_buying.meta_value
             {$having}
             ORDER BY {$orderby_col} {$allowed_order}
             LIMIT %d OFFSET %d

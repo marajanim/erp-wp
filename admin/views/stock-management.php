@@ -49,7 +49,7 @@
                         <th class="jesp-sortable" data-sort="warehouse"><?php esc_html_e('Warehouse', 'jesp-erp'); ?> <span class="jesp-sort-icon"></span></th>
                         <th class="jesp-sortable" data-sort="sales_center"><?php esc_html_e('Sales Center', 'jesp-erp'); ?> <span class="jesp-sort-icon"></span></th>
                         <th class="jesp-sortable" data-sort="total_qty"><?php esc_html_e('Total', 'jesp-erp'); ?> <span class="jesp-sort-icon"></span></th>
-                        <th><?php esc_html_e('WC Stock', 'jesp-erp'); ?></th>
+                        <th><?php esc_html_e('Buying Price', 'jesp-erp'); ?></th>
                         <th><?php esc_html_e('Min Level', 'jesp-erp'); ?></th>
                         <th><?php esc_html_e('Status', 'jesp-erp'); ?></th>
                         <th><?php esc_html_e('Active', 'jesp-erp'); ?></th>

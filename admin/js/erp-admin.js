@@ -567,7 +567,7 @@
             if ($cell.find('.jesp-inline-input').length) return;
 
             const inputType = (field === 'sku') ? 'text' : 'number';
-            const step = (field === 'regular_price' || field === 'sale_price') ? '0.01' : '1';
+            const step = (field === 'regular_price' || field === 'sale_price' || field === 'buying_price') ? '0.01' : '1';
             const min = (field === 'sku') ? '' : '0';
 
             const $displaySpan = $cell.find('.jesp-editable-value');
@@ -593,14 +593,14 @@
                 if (newVal === String(currentVal || '')) { cancelEdit(); return; }
 
                 // Validate client-side.
-                if (field !== 'sku' && field !== 'sale_price') {
+                if (field !== 'sku' && field !== 'sale_price' && field !== 'buying_price') {
                     if (newVal === '' || isNaN(newVal) || parseFloat(newVal) < 0) {
                         ERP.toast('Value must be a non-negative number.', 'error');
                         return;
                     }
                 }
-                if (field === 'sale_price' && newVal !== '' && (isNaN(newVal) || parseFloat(newVal) < 0)) {
-                    ERP.toast('Sale price must be non-negative or empty.', 'error');
+                if ((field === 'sale_price' || field === 'buying_price') && newVal !== '' && (isNaN(newVal) || parseFloat(newVal) < 0)) {
+                    ERP.toast('Price must be non-negative or empty.', 'error');
                     return;
                 }
 
@@ -610,7 +610,7 @@
                         const returnedVal = res.data.value;
                         // Update display.
                         let displayText;
-                        if (field === 'regular_price' || field === 'sale_price') {
+                        if (field === 'regular_price' || field === 'sale_price' || field === 'buying_price') {
                             displayText = returnedVal ? ERP.formatMoney(returnedVal) : '—';
                         } else if (field === 'warehouse_stock' || field === 'sales_center_stock' || field === 'min_stock') {
                             displayText = returnedVal;
@@ -903,7 +903,6 @@
 
                 const isActive = item.product_status === 'publish';
                 const toggleChecked = isActive ? 'checked' : '';
-                const wcStock = item.wc_stock !== null && item.wc_stock !== '' ? item.wc_stock : '—';
 
                 const editableCell = (field, value, displayValue) => `
                     <td class="jesp-editable-cell" data-field="${field}" data-value="${ERP.esc(String(value || ''))}">
@@ -920,7 +919,7 @@
                     ${editableCell('warehouse_stock', item.warehouse_qty, item.warehouse_qty)}
                     ${editableCell('sales_center_stock', item.sales_center_qty, item.sales_center_qty)}
                     <td><strong class="jesp-total-qty">${item.total_qty}</strong></td>
-                    <td style="color:#64748b;">${wcStock}</td>
+                    ${editableCell('buying_price', item.buying_price, item.buying_price ? ERP.formatMoney(item.buying_price) : '—')}
                     ${editableCell('min_stock', item.min_level, item.min_level)}
                     <td>${statusBadge}</td>
                     <td>
