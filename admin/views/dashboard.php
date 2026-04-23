@@ -125,7 +125,7 @@
                     <div class="jesp-erp-card">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <h2 style="margin:0;"><?php esc_html_e('Top Products by Revenue', 'jesp-erp'); ?></h2>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=jesp-erp-orders')); ?>" class="button button-secondary"><?php esc_html_e('View All', 'jesp-erp'); ?></a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=jesp-erp-hero')); ?>" class="button button-secondary"><?php esc_html_e('View All', 'jesp-erp'); ?></a>
                         </div>
                         <canvas id="erp-hero-chart" height="300"></canvas>
                     </div>
@@ -134,7 +134,7 @@
                     <div class="jesp-erp-card">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <h2 style="margin:0;"><?php esc_html_e('Best Sellers', 'jesp-erp'); ?></h2>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=jesp-erp-orders')); ?>" class="button button-secondary" style="font-size:11px;"><?php esc_html_e('View All', 'jesp-erp'); ?></a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=jesp-erp-hero')); ?>" class="button button-secondary" style="font-size:11px;"><?php esc_html_e('View All', 'jesp-erp'); ?></a>
                         </div>
                         <div id="erp-hero-list" class="jesp-hero-list">
                             <p class="jesp-loading"><?php esc_html_e('Loading...', 'jesp-erp'); ?></p>

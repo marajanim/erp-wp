@@ -47,6 +47,7 @@ class JESP_ERP_Admin
         add_submenu_page('jesp-erp', __('Bulk Discounts', 'jesp-erp'), __('Bulk Discounts', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-discounts', array($this, 'render_discounts'));
         add_submenu_page('jesp-erp', __('Orders & Analytics', 'jesp-erp'), __('Orders & Analytics', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-orders', array($this, 'render_orders'));
         add_submenu_page('jesp-erp', __('Customers', 'jesp-erp'), __('Customers', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-customers', array($this, 'render_customers'));
+        add_submenu_page('jesp-erp', __('Hero Products', 'jesp-erp'), __('Hero Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-hero', array($this, 'render_hero_products'));
     }
 
     /**
@@ -62,6 +63,7 @@ class JESP_ERP_Admin
             'erp-manager_page_jesp-erp-discounts',
             'erp-manager_page_jesp-erp-orders',
             'erp-manager_page_jesp-erp-customers',
+            'erp-manager_page_jesp-erp-hero',
         );
 
         if (!in_array($hook, $plugin_pages, true)) {
@@ -91,7 +93,7 @@ class JESP_ERP_Admin
             'jesp-erp-admin',
             JESP_ERP_PLUGIN_URL . 'admin/js/erp-admin.js',
             array('jquery', 'chartjs'),
-            JESP_ERP_VERSION . '.10',
+            JESP_ERP_VERSION . '.11',
             true
         );
 
@@ -148,5 +150,9 @@ class JESP_ERP_Admin
     public function render_customers()
     {
         include JESP_ERP_PLUGIN_DIR . 'admin/views/customers.php';
+    }
+    public function render_hero_products()
+    {
+        include JESP_ERP_PLUGIN_DIR . 'admin/views/hero-products.php';
     }
 }

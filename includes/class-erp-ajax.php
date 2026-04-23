@@ -54,6 +54,8 @@ class JESP_ERP_Ajax
             'erp_sync_customers',
             // v6: Brand revenue
             'erp_get_brand_revenue',
+            // v7: Hero products full list
+            'erp_get_hero_products_list',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -114,6 +116,30 @@ class JESP_ERP_Ajax
             'per_page' => 10,
             'page' => 1,
         ));
+
+        wp_send_json_success($result);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Hero Products — full paginated list with thumbnails               */
+    /* ------------------------------------------------------------------ */
+    public function erp_get_hero_products_list()
+    {
+        $this->verify();
+
+        $result = JESP_ERP_Orders::get_product_analytics(array(
+            'date_from' => sanitize_text_field($_POST['date_from'] ?? gmdate('Y-m-d', strtotime('-30 days'))),
+            'date_to'   => sanitize_text_field($_POST['date_to']   ?? gmdate('Y-m-d')),
+            'search'    => sanitize_text_field($_POST['search']    ?? ''),
+            'per_page'  => absint($_POST['per_page'] ?? 20),
+            'page'      => absint($_POST['page']     ?? 1),
+        ));
+
+        foreach ($result['items'] as &$item) {
+            $pid = absint($item->product_id);
+            $item->thumbnail_url = get_the_post_thumbnail_url($pid, 'thumbnail') ?: '';
+        }
+        unset($item);
 
         wp_send_json_success($result);
     }

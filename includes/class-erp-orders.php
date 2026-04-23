@@ -21,6 +21,7 @@ class JESP_ERP_Orders
             'date_to' => gmdate('Y-m-d'),
             'product_id' => 0,
             'customer' => '',
+            'search' => '',
             'per_page' => 20,
             'page' => 1,
         );
@@ -60,6 +61,10 @@ class JESP_ERP_Orders
 
         if (!empty($args['product_id'])) {
             $where[] = $wpdb->prepare('oim_pid.meta_value = %d', absint($args['product_id']));
+        }
+
+        if (!empty($args['search'])) {
+            $where[] = $wpdb->prepare('p.post_title LIKE %s', '%' . $wpdb->esc_like($args['search']) . '%');
         }
 
         $where_clause = implode(' AND ', $where);

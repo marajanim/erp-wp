@@ -137,6 +137,7 @@
         if (page === 'jesp-erp-discounts') initDiscounts();
         if (page === 'jesp-erp-orders') initOrders();
         if (page === 'jesp-erp-customers') initCustomers();
+        if (page === 'jesp-erp-hero') initHeroProductsPage();
     });
 
     /* ====================================================================
@@ -513,6 +514,146 @@
             });
             html += '</div>';
             $list.html(html);
+        });
+    }
+
+    /* ====================================================================
+       HERO PRODUCTS PAGE (full ranked list)
+       ==================================================================== */
+    let heroPageState = { page: 1, perPage: 20, search: '', dateFrom: '', dateTo: '' };
+    let heroPageMaxRevenue = 0;
+
+    function initHeroProductsPage() {
+        // Default to 30-day range.
+        const to = new Date().toISOString().slice(0, 10);
+        const from = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+        $('#hp-date-from').val(from);
+        $('#hp-date-to').val(to);
+        heroPageState.dateFrom = from;
+        heroPageState.dateTo = to;
+
+        loadHeroPageList();
+
+        // Quick range buttons.
+        $(document).on('click', '.jesp-hp-range', function () {
+            const days = parseInt($(this).data('days'));
+            $('.jesp-hp-range').removeClass('active');
+            $(this).addClass('active');
+
+            if (days === 0) {
+                $('.jesp-hp-custom-range').show();
+                return;
+            }
+            $('.jesp-hp-custom-range').hide();
+            const t = new Date().toISOString().slice(0, 10);
+            const f = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+            $('#hp-date-from').val(f);
+            $('#hp-date-to').val(t);
+            heroPageState.dateFrom = f;
+            heroPageState.dateTo = t;
+            heroPageState.page = 1;
+            loadHeroPageList();
+        });
+
+        // Custom date apply.
+        $('#hp-apply-custom').on('click', function () {
+            heroPageState.dateFrom = $('#hp-date-from').val();
+            heroPageState.dateTo = $('#hp-date-to').val();
+            heroPageState.page = 1;
+            loadHeroPageList();
+        });
+
+        // Search (debounced).
+        let hpSearchTimer;
+        $('#hp-search').on('input', function () {
+            clearTimeout(hpSearchTimer);
+            hpSearchTimer = setTimeout(function () {
+                heroPageState.search = $('#hp-search').val();
+                heroPageState.page = 1;
+                loadHeroPageList();
+            }, 350);
+        });
+
+        // Per page.
+        $('#hp-per-page').on('change', function () {
+            heroPageState.perPage = parseInt($(this).val());
+            heroPageState.page = 1;
+            loadHeroPageList();
+        });
+    }
+
+    function loadHeroPageList(page) {
+        if (page !== undefined) heroPageState.page = page;
+
+        const $body = $('#hp-table-body');
+        $body.html('<tr><td colspan="7" class="jesp-loading">' + (ERP.strings.loading || 'Loading...') + '</td></tr>');
+
+        ERP.ajax('erp_get_hero_products_list', {
+            date_from: heroPageState.dateFrom,
+            date_to:   heroPageState.dateTo,
+            search:    heroPageState.search,
+            per_page:  heroPageState.perPage,
+            page:      heroPageState.page,
+        }).done(function (res) {
+            if (!res.success || !res.data.items.length) {
+                $body.html('<tr><td colspan="7" class="jesp-loading">No products found for this period.</td></tr>');
+                $('#hp-summary-products').text('0');
+                $('#hp-summary-revenue').text(ERP.formatMoney(0));
+                $('#hp-summary-top').text('—');
+                return;
+            }
+
+            const items = res.data.items;
+            const startRank = (heroPageState.page - 1) * heroPageState.perPage + 1;
+
+            // Compute page revenue total + max for performance bar.
+            const pageRevTotal = items.reduce((s, i) => s + parseFloat(i.total_revenue), 0);
+            heroPageMaxRevenue = Math.max(...items.map(i => parseFloat(i.total_revenue)));
+
+            // Update summary cards.
+            $('#hp-summary-products').text(res.data.total);
+            $('#hp-summary-revenue').text(ERP.formatMoney(pageRevTotal));
+            $('#hp-summary-top').text(
+                startRank === 1 && items[0]
+                    ? (items[0].product_name || 'Product #' + items[0].product_id).substring(0, 22)
+                    : '—'
+            );
+
+            let html = '';
+            items.forEach(function (item, idx) {
+                const rank = startRank + idx;
+                let medal;
+                if (rank === 1)      medal = '<span style="font-size:22px;">🥇</span>';
+                else if (rank === 2) medal = '<span style="font-size:22px;">🥈</span>';
+                else if (rank === 3) medal = '<span style="font-size:22px;">🥉</span>';
+                else                 medal = '<span style="font-weight:700;color:#64748b;">#' + rank + '</span>';
+
+                const thumb = item.thumbnail_url
+                    ? '<img src="' + item.thumbnail_url + '" width="44" height="44" style="object-fit:cover;border-radius:6px;vertical-align:middle;">'
+                    : '<span class="dashicons dashicons-format-image" style="color:#cbd5e1;font-size:32px;width:40px;height:40px;line-height:44px;"></span>';
+
+                const barPct = heroPageMaxRevenue > 0
+                    ? ((parseFloat(item.total_revenue) / heroPageMaxRevenue) * 100).toFixed(1)
+                    : 0;
+                const barColor = rank === 1 ? '#f59e0b' : rank === 2 ? '#94a3b8' : rank === 3 ? '#b45309' : '#6366f1';
+
+                html += '<tr>' +
+                    '<td style="text-align:center;">' + medal + '</td>' +
+                    '<td>' + thumb + '</td>' +
+                    '<td><strong>' + ERP.esc(item.product_name || 'Product #' + item.product_id) + '</strong></td>' +
+                    '<td style="text-align:center;">' + item.order_count + '</td>' +
+                    '<td style="text-align:center;">' + item.total_qty_sold + '</td>' +
+                    '<td><strong>' + ERP.formatMoney(item.total_revenue) + '</strong></td>' +
+                    '<td style="min-width:120px;">' +
+                        '<div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">' +
+                            '<div style="width:' + barPct + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width .4s;"></div>' +
+                        '</div>' +
+                    '</td>' +
+                '</tr>';
+            });
+            $body.html(html);
+
+            ERP.buildPagination('#hp-pagination', heroPageState.page, res.data.pages, loadHeroPageList);
         });
     }
 
