@@ -1,12 +1,60 @@
 <?php if (!defined('ABSPATH')) {
     exit;
 }
-$custom_css = get_option('jesp_erp_custom_css', '');
+$custom_css  = get_option('jesp_erp_custom_css', '');
+$hidden_tabs = (array) get_option('jesp_erp_hidden_tabs', array());
+
+$manageable_tabs = array(
+    'jesp-erp-stock'     => array('label' => __('Stock Management', 'jesp-erp'),   'icon' => 'dashicons-archive'),
+    'jesp-erp-import'    => array('label' => __('Import Products', 'jesp-erp'),    'icon' => 'dashicons-upload'),
+    'jesp-erp-export'    => array('label' => __('Export Products', 'jesp-erp'),    'icon' => 'dashicons-download'),
+    'jesp-erp-discounts' => array('label' => __('Bulk Discounts', 'jesp-erp'),     'icon' => 'dashicons-tag'),
+    'jesp-erp-orders'    => array('label' => __('Orders & Analytics', 'jesp-erp'), 'icon' => 'dashicons-chart-bar'),
+    'jesp-erp-customers' => array('label' => __('Customers', 'jesp-erp'),          'icon' => 'dashicons-groups'),
+    'jesp-erp-hero'      => array('label' => __('Hero Products', 'jesp-erp'),      'icon' => 'dashicons-star-filled'),
+);
 ?>
+<style>
+.jesp-tab-toggle-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.jesp-tab-toggle-row:last-child{border-bottom:none;}
+.jesp-tab-toggle-label{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;}
+.jesp-tab-toggle-label .dashicons{color:#6366f1;font-size:16px;width:16px;height:16px;}
+.jesp-toggle-switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;}
+.jesp-toggle-switch input{opacity:0;width:0;height:0;}
+.jesp-toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#d1d5db;border-radius:22px;transition:.3s;}
+.jesp-toggle-slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.jesp-toggle-switch input:checked+.jesp-toggle-slider{background:#6366f1;}
+.jesp-toggle-switch input:checked+.jesp-toggle-slider:before{transform:translateX(18px);}
+</style>
 <div class="wrap jesp-erp-wrap">
     <div class="jesp-erp-header">
         <h1><span class="dashicons dashicons-admin-customizer"></span> <?php esc_html_e('ERP Settings', 'jesp-erp'); ?></h1>
         <p class="jesp-erp-subtitle"><?php esc_html_e('Customise the look and feel of ERP Manager pages', 'jesp-erp'); ?></p>
+    </div>
+
+    <!-- Tab Visibility -->
+    <div class="jesp-erp-card" style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="margin:0;"><span class="dashicons dashicons-visibility" style="color:#6366f1;margin-right:6px;"></span><?php esc_html_e('Tab Visibility', 'jesp-erp'); ?></h2>
+            <button class="button button-primary" id="jesp-settings-save"><?php esc_html_e('Save Settings', 'jesp-erp'); ?></button>
+        </div>
+        <p style="color:#64748b;font-size:13px;margin-bottom:16px;">
+            <?php esc_html_e('Toggle which menu tabs appear in the sidebar. Dashboard and Settings are always visible. Changes take effect after saving (page will reload).', 'jesp-erp'); ?>
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0 24px;">
+            <?php foreach ($manageable_tabs as $slug => $tab) : ?>
+            <div class="jesp-tab-toggle-row">
+                <span class="jesp-tab-toggle-label">
+                    <span class="dashicons <?php echo esc_attr($tab['icon']); ?>"></span>
+                    <?php echo esc_html($tab['label']); ?>
+                </span>
+                <label class="jesp-toggle-switch">
+                    <input type="checkbox" class="jesp-tab-toggle" value="<?php echo esc_attr($slug); ?>" <?php checked(!in_array($slug, $hidden_tabs, true)); ?>>
+                    <span class="jesp-toggle-slider"></span>
+                </label>
+            </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 
     <div class="jesp-erp-row">

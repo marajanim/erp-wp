@@ -1894,20 +1894,29 @@
             return cmEditor ? cmEditor.getValue() : $('#jesp-custom-css-editor').val();
         }
 
-        // Save button.
+        // Save button — saves CSS + tab visibility, then reloads to apply menu changes.
         $('#jesp-settings-save').on('click', function () {
             const $btn = $(this).prop('disabled', true).text('Saving...');
-            ERP.ajax('erp_save_settings', { custom_css: getCss() }).done(function (res) {
-                if (res.success) {
-                    ERP.toast(res.data.message || 'Saved!');
-                } else {
-                    ERP.toast(res.data?.message || ERP.strings.error || 'Error', 'error');
-                }
-            }).fail(function () {
-                ERP.toast('Network error.', 'error');
-            }).always(function () {
-                $btn.prop('disabled', false).text('Save Settings');
+
+            const hiddenTabs = [];
+            $('.jesp-tab-toggle').each(function () {
+                if (!$(this).is(':checked')) hiddenTabs.push($(this).val());
             });
+
+            ERP.ajax('erp_save_settings', { custom_css: getCss(), hidden_tabs: hiddenTabs })
+                .done(function (res) {
+                    if (res.success) {
+                        ERP.toast(res.data.message || 'Saved!');
+                        setTimeout(() => window.location.reload(), 900);
+                    } else {
+                        ERP.toast(res.data?.message || ERP.strings.error || 'Error', 'error');
+                        $btn.prop('disabled', false).text('Save Settings');
+                    }
+                })
+                .fail(function () {
+                    ERP.toast('Network error.', 'error');
+                    $btn.prop('disabled', false).text('Save Settings');
+                });
         });
 
         // Clear button.

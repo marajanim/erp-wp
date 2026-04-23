@@ -40,14 +40,16 @@ class JESP_ERP_Admin
             56
         );
 
+        $hidden = (array) get_option('jesp_erp_hidden_tabs', array());
+
         add_submenu_page('jesp-erp', __('Dashboard', 'jesp-erp'), __('Dashboard', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp', array($this, 'render_dashboard'));
-        add_submenu_page('jesp-erp', __('Stock Management', 'jesp-erp'), __('Stock Management', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-stock', array($this, 'render_stock'));
-        add_submenu_page('jesp-erp', __('Import Products', 'jesp-erp'), __('Import Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-import', array($this, 'render_import'));
-        add_submenu_page('jesp-erp', __('Export Products', 'jesp-erp'), __('Export Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-export', array($this, 'render_export'));
-        add_submenu_page('jesp-erp', __('Bulk Discounts', 'jesp-erp'), __('Bulk Discounts', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-discounts', array($this, 'render_discounts'));
-        add_submenu_page('jesp-erp', __('Orders & Analytics', 'jesp-erp'), __('Orders & Analytics', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-orders', array($this, 'render_orders'));
-        add_submenu_page('jesp-erp', __('Customers', 'jesp-erp'), __('Customers', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-customers', array($this, 'render_customers'));
-        add_submenu_page('jesp-erp', __('Hero Products', 'jesp-erp'), __('Hero Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-hero', array($this, 'render_hero_products'));
+        if (!in_array('jesp-erp-stock', $hidden, true))     add_submenu_page('jesp-erp', __('Stock Management', 'jesp-erp'), __('Stock Management', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-stock', array($this, 'render_stock'));
+        if (!in_array('jesp-erp-import', $hidden, true))    add_submenu_page('jesp-erp', __('Import Products', 'jesp-erp'), __('Import Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-import', array($this, 'render_import'));
+        if (!in_array('jesp-erp-export', $hidden, true))    add_submenu_page('jesp-erp', __('Export Products', 'jesp-erp'), __('Export Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-export', array($this, 'render_export'));
+        if (!in_array('jesp-erp-discounts', $hidden, true)) add_submenu_page('jesp-erp', __('Bulk Discounts', 'jesp-erp'), __('Bulk Discounts', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-discounts', array($this, 'render_discounts'));
+        if (!in_array('jesp-erp-orders', $hidden, true))    add_submenu_page('jesp-erp', __('Orders & Analytics', 'jesp-erp'), __('Orders & Analytics', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-orders', array($this, 'render_orders'));
+        if (!in_array('jesp-erp-customers', $hidden, true)) add_submenu_page('jesp-erp', __('Customers', 'jesp-erp'), __('Customers', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-customers', array($this, 'render_customers'));
+        if (!in_array('jesp-erp-hero', $hidden, true))      add_submenu_page('jesp-erp', __('Hero Products', 'jesp-erp'), __('Hero Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-hero', array($this, 'render_hero_products'));
         add_submenu_page('jesp-erp', __('Settings', 'jesp-erp'), __('Settings', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-settings', array($this, 'render_settings'));
     }
 
@@ -107,7 +109,7 @@ class JESP_ERP_Admin
             'jesp-erp-admin',
             JESP_ERP_PLUGIN_URL . 'admin/js/erp-admin.js',
             array('jquery', 'chartjs'),
-            JESP_ERP_VERSION . '.12',
+            JESP_ERP_VERSION . '.13',
             true
         );
 

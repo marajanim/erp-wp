@@ -995,11 +995,16 @@ class JESP_ERP_Ajax
     {
         $this->verify();
 
-        // Strip HTML tags but preserve CSS content; remove any </style> escape attempt.
+        // Save custom CSS.
         $css = wp_strip_all_tags(wp_unslash($_POST['custom_css'] ?? ''));
         $css = str_replace('</style', '', $css);
-
         update_option('jesp_erp_custom_css', $css);
+
+        // Save tab visibility.
+        $allowed = array('jesp-erp-stock', 'jesp-erp-import', 'jesp-erp-export', 'jesp-erp-discounts', 'jesp-erp-orders', 'jesp-erp-customers', 'jesp-erp-hero');
+        $raw     = isset($_POST['hidden_tabs']) && is_array($_POST['hidden_tabs']) ? $_POST['hidden_tabs'] : array();
+        $hidden  = array_values(array_intersect(array_map('sanitize_text_field', $raw), $allowed));
+        update_option('jesp_erp_hidden_tabs', $hidden);
 
         wp_send_json_success(array('message' => __('Settings saved.', 'jesp-erp')));
     }
