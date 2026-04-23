@@ -139,6 +139,7 @@
         if (page === 'jesp-erp-customers') initCustomers();
         if (page === 'jesp-erp-hero') initHeroProductsPage();
         if (page === 'jesp-erp-settings') initSettings();
+        if (page === 'jesp-erp-invoices') initInvoiceMaker();
     });
 
     /* ====================================================================
@@ -1971,6 +1972,274 @@
                 $('#jesp-custom-css-editor').val('');
             }
         });
+    }
+
+    /* ====================================================================
+       INVOICE MAKER
+       ==================================================================== */
+    function initInvoiceMaker() {
+        let invPage = 1;
+
+        loadInvoiceList();
+
+        $('#inv-new-btn').on('click', function () { openEditor(null); });
+        $('#inv-filter-btn').on('click', function () { invPage = 1; loadInvoiceList(); });
+        $('#inv-search').on('keydown', function (e) { if (e.key === 'Enter') { invPage = 1; loadInvoiceList(); } });
+        $('#inv-back-btn').on('click', function () { showListView(); });
+
+        $('#inv-add-row').on('click', function () { addItemRow(); recalcTotals(); });
+
+        $(document).on('input', '.inv-qty, .inv-price', function () { recalcRow($(this).closest('tr')); recalcTotals(); });
+        $(document).on('click', '.inv-del-row', function () { $(this).closest('tr').remove(); recalcTotals(); });
+
+        $('#inv-discount-type, #inv-discount-value, #inv-tax-rate').on('input change', recalcTotals);
+
+        $('#inv-save-btn').on('click', saveInvoice);
+        $('#inv-print-btn').on('click', printInvoice);
+
+        $(document).on('click', '.inv-edit-btn', function () {
+            openEditor($(this).data('id'));
+        });
+
+        $(document).on('click', '.inv-delete-btn', function () {
+            if (!confirm('Delete this invoice?')) return;
+            ERP.ajax('erp_delete_invoice', { id: $(this).data('id') }).done(function (res) {
+                if (res.success) { ERP.toast('Invoice deleted.'); loadInvoiceList(); }
+                else ERP.toast(res.data?.message || 'Error', 'error');
+            });
+        });
+
+        $(document).on('click', '.inv-print-list-btn', function () {
+            const id = $(this).data('id');
+            const url = ERP.ajaxUrl + '?action=erp_print_invoice&nonce=' + ERP.nonce + '&id=' + id;
+            window.open(url, '_blank');
+        });
+
+        function showListView() {
+            $('#jesp-inv-editor-view').hide();
+            $('#jesp-inv-list-view').show();
+            loadInvoiceList();
+        }
+
+        function showEditorView() {
+            $('#jesp-inv-list-view').hide();
+            $('#jesp-inv-editor-view').show();
+        }
+
+        function loadInvoiceList(page) {
+            page = page || invPage;
+            const $body = $('#inv-list-body');
+            $body.html('<tr><td colspan="6" class="jesp-loading">Loading…</td></tr>');
+
+            ERP.ajax('erp_get_invoices', {
+                per_page: 20,
+                page: page,
+                search: $('#inv-search').val() || '',
+                status: $('#inv-status-filter').val() || '',
+            }).done(function (res) {
+                if (!res.success) { $body.html('<tr><td colspan="6" class="jesp-loading">Error loading invoices.</td></tr>'); return; }
+                const { items, pages } = res.data;
+                if (!items.length) { $body.html('<tr><td colspan="6" class="jesp-loading">No invoices found.</td></tr>'); return; }
+
+                let html = '';
+                items.forEach(inv => {
+                    const statusBadge = inv.status === 'paid'
+                        ? '<span class="jesp-badge jesp-badge-green">Paid</span>'
+                        : '<span class="jesp-badge jesp-badge-gray">Draft</span>';
+                    html += `<tr>
+                        <td><strong>${ERP.esc(inv.invoice_number)}</strong></td>
+                        <td>${ERP.esc(inv.customer_name)}</td>
+                        <td>${ERP.formatDate(inv.invoice_date)}</td>
+                        <td><strong>${ERP.formatMoney(inv.total)}</strong></td>
+                        <td>${statusBadge}</td>
+                        <td style="white-space:nowrap;">
+                            <button class="jesp-action-btn-sm inv-edit-btn" data-id="${inv.id}" title="Edit"><span class="dashicons dashicons-edit"></span></button>
+                            <button class="jesp-action-btn-sm inv-print-list-btn" data-id="${inv.id}" title="Print"><span class="dashicons dashicons-printer"></span></button>
+                            <button class="jesp-action-btn-sm inv-delete-btn" style="color:#dc2626;" data-id="${inv.id}" title="Delete"><span class="dashicons dashicons-trash"></span></button>
+                        </td>
+                    </tr>`;
+                });
+                $body.html(html);
+                ERP.buildPagination('#inv-list-pagination', page, pages, function (p) { invPage = p; loadInvoiceList(p); });
+            });
+        }
+
+        function openEditor(id) {
+            resetEditor();
+            if (id) {
+                ERP.ajax('erp_get_invoice', { id: id }).done(function (res) {
+                    if (!res.success) { ERP.toast('Could not load invoice.', 'error'); return; }
+                    populateEditor(res.data);
+                    showEditorView();
+                });
+            } else {
+                addItemRow();
+                recalcTotals();
+                showEditorView();
+            }
+        }
+
+        function resetEditor() {
+            $('#inv-id').val(0);
+            $('#inv-number').val('');
+            $('#inv-date').val(new Date().toISOString().slice(0, 10));
+            $('#inv-status').val('draft');
+            $('#inv-customer-name, #inv-customer-phone, #inv-customer-email, #inv-customer-address, #inv-notes').val('');
+            $('#inv-discount-type').val('none');
+            $('#inv-discount-value').val(0);
+            $('#inv-tax-rate').val(0);
+            $('#inv-items-body').empty();
+            $('#inv-display-subtotal, #inv-display-total').text('—');
+        }
+
+        function populateEditor(inv) {
+            $('#inv-id').val(inv.id);
+            $('#inv-number').val(inv.invoice_number);
+            $('#inv-date').val(inv.invoice_date);
+            $('#inv-status').val(inv.status);
+            $('#inv-customer-name').val(inv.customer_name);
+            $('#inv-customer-phone').val(inv.customer_phone);
+            $('#inv-customer-email').val(inv.customer_email);
+            $('#inv-customer-address').val(inv.customer_address);
+            $('#inv-notes').val(inv.notes);
+            $('#inv-discount-type').val(inv.discount_type);
+            $('#inv-discount-value').val(inv.discount_value);
+            $('#inv-tax-rate').val(inv.tax_rate);
+
+            $('#inv-items-body').empty();
+            (inv.items || []).forEach(item => addItemRow(item));
+            recalcTotals();
+        }
+
+        function addItemRow(item) {
+            item = item || {};
+            const row = `<tr>
+                <td><input type="text" class="inv-name" value="${ERP.esc(item.product_name || '')}" placeholder="Product / Description"></td>
+                <td><input type="text" class="inv-sku" value="${ERP.esc(item.sku || '')}" placeholder="SKU"></td>
+                <td><input type="number" class="inv-qty" value="${parseFloat(item.qty || 1)}" min="0" step="0.01"></td>
+                <td><input type="number" class="inv-price" value="${parseFloat(item.unit_price || 0)}" min="0" step="0.01"></td>
+                <td class="r inv-line-total" style="text-align:right;font-weight:600;">${ERP.formatMoney((item.qty || 1) * (item.unit_price || 0))}</td>
+                <td style="text-align:center;"><button class="inv-del-row" title="Remove row"><span class="dashicons dashicons-trash"></span></button></td>
+            </tr>`;
+            $('#inv-items-body').append(row);
+        }
+
+        function recalcRow($row) {
+            const qty   = parseFloat($row.find('.inv-qty').val())   || 0;
+            const price = parseFloat($row.find('.inv-price').val())  || 0;
+            $row.find('.inv-line-total').text(ERP.formatMoney(qty * price));
+        }
+
+        function recalcTotals() {
+            let subtotal = 0;
+            $('#inv-items-body tr').each(function () {
+                const qty   = parseFloat($(this).find('.inv-qty').val())   || 0;
+                const price = parseFloat($(this).find('.inv-price').val())  || 0;
+                subtotal += qty * price;
+            });
+
+            const discType  = $('#inv-discount-type').val();
+            const discVal   = parseFloat($('#inv-discount-value').val()) || 0;
+            const taxRate   = parseFloat($('#inv-tax-rate').val())       || 0;
+
+            let discAmt = 0;
+            if (discType === 'percentage') discAmt = subtotal * (discVal / 100);
+            else if (discType === 'fixed') discAmt = Math.min(discVal, subtotal);
+
+            const afterDisc = subtotal - discAmt;
+            const taxAmt    = afterDisc * (taxRate / 100);
+            const total     = afterDisc + taxAmt;
+
+            $('#inv-display-subtotal').text(ERP.formatMoney(subtotal));
+            $('#inv-display-total').text(ERP.formatMoney(total));
+        }
+
+        function collectItems() {
+            const items = [];
+            $('#inv-items-body tr').each(function () {
+                const name = $(this).find('.inv-name').val().trim();
+                if (!name) return;
+                items.push({
+                    product_name: name,
+                    sku:          $(this).find('.inv-sku').val().trim(),
+                    qty:          parseFloat($(this).find('.inv-qty').val())  || 1,
+                    unit_price:   parseFloat($(this).find('.inv-price').val()) || 0,
+                });
+            });
+            return items;
+        }
+
+        function getSubtotal() {
+            let s = 0;
+            $('#inv-items-body tr').each(function () {
+                s += (parseFloat($(this).find('.inv-qty').val()) || 0) * (parseFloat($(this).find('.inv-price').val()) || 0);
+            });
+            return s;
+        }
+
+        function getTotal(subtotal) {
+            const discType = $('#inv-discount-type').val();
+            const discVal  = parseFloat($('#inv-discount-value').val()) || 0;
+            const taxRate  = parseFloat($('#inv-tax-rate').val())       || 0;
+            let discAmt = 0;
+            if (discType === 'percentage') discAmt = subtotal * (discVal / 100);
+            else if (discType === 'fixed') discAmt = Math.min(discVal, subtotal);
+            const after = subtotal - discAmt;
+            return after + after * (taxRate / 100);
+        }
+
+        function saveInvoice() {
+            const name = $('#inv-customer-name').val().trim();
+            if (!name) { ERP.toast('Customer name is required.', 'error'); return; }
+
+            const items = collectItems();
+            if (!items.length) { ERP.toast('Add at least one line item.', 'error'); return; }
+
+            const sub   = getSubtotal();
+            const total = getTotal(sub);
+            const $btn  = $('#inv-save-btn').prop('disabled', true).text('Saving…');
+
+            ERP.ajax('erp_save_invoice', {
+                id:               $('#inv-id').val(),
+                invoice_number:   $('#inv-number').val().trim(),
+                customer_name:    name,
+                customer_phone:   $('#inv-customer-phone').val().trim(),
+                customer_email:   $('#inv-customer-email').val().trim(),
+                customer_address: $('#inv-customer-address').val().trim(),
+                invoice_date:     $('#inv-date').val(),
+                subtotal:         sub,
+                discount_type:    $('#inv-discount-type').val(),
+                discount_value:   $('#inv-discount-value').val(),
+                tax_rate:         $('#inv-tax-rate').val(),
+                total:            total,
+                notes:            $('#inv-notes').val().trim(),
+                status:           $('#inv-status').val(),
+                items:            JSON.stringify(items),
+            }).done(function (res) {
+                if (res.success) {
+                    ERP.toast(res.data.message || 'Saved!');
+                    if (!$('#inv-id').val() || $('#inv-id').val() === '0') {
+                        $('#inv-id').val(res.data.id);
+                    }
+                } else {
+                    ERP.toast(res.data?.message || 'Error', 'error');
+                }
+            }).fail(function () {
+                ERP.toast('Network error.', 'error');
+            }).always(function () {
+                $btn.prop('disabled', false).html('<span class="dashicons dashicons-saved" style="margin-top:3px;"></span> Save Invoice');
+            });
+        }
+
+        function printInvoice() {
+            const id = $('#inv-id').val();
+            if (!id || id === '0') {
+                ERP.toast('Save the invoice first before printing.', 'error');
+                return;
+            }
+            const url = ERP.ajaxUrl + '?action=erp_print_invoice&nonce=' + ERP.nonce + '&id=' + id;
+            window.open(url, '_blank');
+        }
     }
 
 })(jQuery);

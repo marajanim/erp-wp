@@ -12,6 +12,7 @@ $manageable_tabs = array(
     'jesp-erp-orders'    => array('label' => __('Orders & Analytics', 'jesp-erp'), 'icon' => 'dashicons-chart-bar'),
     'jesp-erp-customers' => array('label' => __('Customers', 'jesp-erp'),          'icon' => 'dashicons-groups'),
     'jesp-erp-hero'      => array('label' => __('Hero Products', 'jesp-erp'),      'icon' => 'dashicons-star-filled'),
+    'jesp-erp-invoices'  => array('label' => __('Invoice Maker', 'jesp-erp'),      'icon' => 'dashicons-media-spreadsheet'),
 );
 ?>
 <style>

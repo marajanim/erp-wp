@@ -37,6 +37,7 @@ require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-discount.php';
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-orders.php';
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-customers.php';
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-woocommerce.php';
+require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-invoices.php';
 
 register_activation_hook( __FILE__, array( 'JESP_ERP_Activator', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'JESP_ERP_Deactivator', 'deactivate' ) );

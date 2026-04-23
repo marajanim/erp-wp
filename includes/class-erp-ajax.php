@@ -60,6 +60,12 @@ class JESP_ERP_Ajax
             'erp_save_settings',
             // v9: Sample CSV download
             'erp_download_sample_csv',
+            // v10: Invoice Maker
+            'erp_get_invoices',
+            'erp_get_invoice',
+            'erp_save_invoice',
+            'erp_delete_invoice',
+            'erp_print_invoice',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -1007,7 +1013,7 @@ class JESP_ERP_Ajax
         update_option('jesp_erp_custom_css', $css);
 
         // Save tab visibility.
-        $allowed = array('jesp-erp-stock', 'jesp-erp-import', 'jesp-erp-export', 'jesp-erp-discounts', 'jesp-erp-orders', 'jesp-erp-customers', 'jesp-erp-hero');
+        $allowed = array('jesp-erp-stock', 'jesp-erp-import', 'jesp-erp-export', 'jesp-erp-discounts', 'jesp-erp-orders', 'jesp-erp-customers', 'jesp-erp-hero', 'jesp-erp-invoices');
         $raw     = isset($_POST['hidden_tabs']) && is_array($_POST['hidden_tabs']) ? $_POST['hidden_tabs'] : array();
         $hidden  = array_values(array_intersect(array_map('sanitize_text_field', $raw), $allowed));
         update_option('jesp_erp_hidden_tabs', $hidden);
@@ -1046,6 +1052,113 @@ class JESP_ERP_Ajax
         fputcsv($output, array('Accessory Pack','ACC-001','Universal accessory bundle',         '19.99', '200', '25', 'Sales Center', ''));
 
         fclose($output);
+        exit;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  v10: Invoice Maker                                                 */
+    /* ------------------------------------------------------------------ */
+    public function erp_get_invoices()
+    {
+        $this->verify();
+
+        $result = JESP_ERP_Invoices::get_invoices(array(
+            'per_page' => absint($_POST['per_page'] ?? 20),
+            'page'     => absint($_POST['page']     ?? 1),
+            'search'   => sanitize_text_field($_POST['search'] ?? ''),
+            'status'   => sanitize_text_field($_POST['status'] ?? ''),
+        ));
+
+        wp_send_json_success($result);
+    }
+
+    public function erp_get_invoice()
+    {
+        $this->verify();
+
+        $id      = absint($_POST['id'] ?? 0);
+        $invoice = JESP_ERP_Invoices::get_invoice($id);
+
+        if (!$invoice) {
+            wp_send_json_error(array('message' => __('Invoice not found.', 'jesp-erp')));
+        }
+
+        wp_send_json_success($invoice);
+    }
+
+    public function erp_save_invoice()
+    {
+        $this->verify();
+
+        $data = array(
+            'id'               => absint($_POST['id']               ?? 0),
+            'invoice_number'   => sanitize_text_field($_POST['invoice_number']   ?? ''),
+            'customer_name'    => sanitize_text_field($_POST['customer_name']    ?? ''),
+            'customer_phone'   => sanitize_text_field($_POST['customer_phone']   ?? ''),
+            'customer_email'   => sanitize_email($_POST['customer_email']        ?? ''),
+            'customer_address' => sanitize_textarea_field($_POST['customer_address'] ?? ''),
+            'invoice_date'     => sanitize_text_field($_POST['invoice_date']     ?? gmdate('Y-m-d')),
+            'subtotal'         => floatval($_POST['subtotal']      ?? 0),
+            'discount_type'    => sanitize_text_field($_POST['discount_type']    ?? 'none'),
+            'discount_value'   => floatval($_POST['discount_value'] ?? 0),
+            'tax_rate'         => floatval($_POST['tax_rate']      ?? 0),
+            'total'            => floatval($_POST['total']         ?? 0),
+            'notes'            => sanitize_textarea_field($_POST['notes']        ?? ''),
+            'status'           => sanitize_text_field($_POST['status']           ?? 'draft'),
+        );
+
+        $raw_items = isset($_POST['items']) ? json_decode(wp_unslash($_POST['items']), true) : array();
+        $items = array();
+        if (is_array($raw_items)) {
+            foreach ($raw_items as $item) {
+                $items[] = array(
+                    'product_name' => sanitize_text_field($item['product_name'] ?? ''),
+                    'sku'          => sanitize_text_field($item['sku']          ?? ''),
+                    'qty'          => floatval($item['qty']        ?? 1),
+                    'unit_price'   => floatval($item['unit_price'] ?? 0),
+                );
+            }
+        }
+
+        $id = JESP_ERP_Invoices::save_invoice($data, $items);
+
+        if (!$id) {
+            wp_send_json_error(array('message' => __('Could not save invoice.', 'jesp-erp')));
+        }
+
+        wp_send_json_success(array('id' => $id, 'message' => __('Invoice saved.', 'jesp-erp')));
+    }
+
+    public function erp_delete_invoice()
+    {
+        $this->verify();
+
+        $id = absint($_POST['id'] ?? 0);
+        JESP_ERP_Invoices::delete_invoice($id);
+
+        wp_send_json_success(array('message' => __('Invoice deleted.', 'jesp-erp')));
+    }
+
+    public function erp_print_invoice()
+    {
+        check_ajax_referer('jesp_erp_nonce', 'nonce');
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die('Insufficient permissions.');
+        }
+
+        $id      = absint($_REQUEST['id'] ?? 0);
+        $invoice = JESP_ERP_Invoices::get_invoice($id);
+
+        if (!$invoice) {
+            wp_die('Invoice not found.');
+        }
+
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/html; charset=utf-8');
+        echo JESP_ERP_Invoices::generate_print_html($invoice); // phpcs:ignore WordPress.Security.EscapeOutput
         exit;
     }
 

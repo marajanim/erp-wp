@@ -83,5 +83,7 @@ class JESP_ERP_Activator {
             KEY idx_product_id (product_id),
             KEY idx_created_at (created_at)
         ) {$charset};" );
+
+        JESP_ERP_Invoices::create_tables();
     }
 }
