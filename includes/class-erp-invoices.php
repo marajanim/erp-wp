@@ -221,32 +221,55 @@ class JESP_ERP_Invoices {
 <meta charset="UTF-8">
 <title>Invoice <?php echo esc_html( $invoice->invoice_number ); ?> — <?php echo esc_html( $store_name ); ?></title>
 <style>
-body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f0f0f0;margin:0;padding:20px;}
+*{box-sizing:border-box;}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f0f0f0;margin:0;padding:20px;font-size:14px;color:#222;}
+h1,h2,h3,h4,p{margin:0;padding:0;}
 .invoice-box{max-width:800px;margin:auto;background:#fff;padding:40px;border:1px solid #ddd;box-shadow:0 0 10px rgba(0,0,0,.1);}
-.header{display:flex;justify-content:space-between;align-items:center;}
-.title{font-size:40px;font-weight:bold;color:#2c3e50;}
-.logo img{max-height:80px;max-width:160px;object-fit:contain;}
-.logo-text{font-size:20px;font-weight:700;color:#2c3e50;}
-.company-name{text-align:center;margin:20px 0;}
-.company-name h1{margin:0;letter-spacing:2px;font-size:22px;}
-.tagline{background:#e0e0e0;padding:2px 15px;border-radius:10px;font-size:14px;font-weight:bold;}
-.meta-info,.address-container{display:flex;justify-content:space-between;margin-top:30px;line-height:1.6;}
-.address-block h3{margin-bottom:5px;border-bottom:2px solid #333;display:inline-block;}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0;}
+.title{font-size:42px;font-weight:bold;color:#2c3e50;line-height:1;}
+.logo-wrap img{width:80px;height:80px;border-radius:50%;border:2px solid #ccc;object-fit:cover;}
+.logo-wrap-text{font-size:18px;font-weight:700;color:#2c3e50;border:2px solid #ccc;border-radius:50%;width:80px;height:80px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-size:11px;}
+
+/* Company name */
+.company-name{text-align:center;margin:18px 0 10px;}
+.company-name h1{font-size:22px;font-weight:bold;letter-spacing:3px;color:#1a1a1a;}
+.tagline{display:inline-block;background:#e0e0e0;padding:3px 18px;border-radius:12px;font-size:13px;font-weight:bold;margin-top:6px;}
+
+/* Meta */
+.meta-info{display:flex;justify-content:space-between;margin-top:24px;line-height:1.8;font-size:14px;}
+.meta-info p{margin:0;padding:0;}
+
+/* Addresses */
+.address-container{display:flex;justify-content:space-between;margin-top:24px;line-height:1.7;font-size:14px;}
+.address-block{width:45%;}
+.address-block h3{font-size:15px;font-weight:bold;color:#1a1a1a;border-bottom:2px solid #333;display:inline-block;padding-bottom:2px;margin-bottom:8px;}
+.address-block p{margin:0;padding:0;}
 .blue-text{color:#0044cc;}
-.items-table{width:100%;border-collapse:collapse;margin-top:30px;}
-.items-table th,.items-table td{border:1px solid #333;padding:10px;text-align:left;}
-.items-table thead{background:#f9f9f9;}
+
+/* Items table */
+.items-table{width:100%;border-collapse:collapse;margin-top:28px;font-size:14px;}
+.items-table th,.items-table td{border:1px solid #333;padding:10px 12px;text-align:left;vertical-align:top;}
+.items-table thead tr{background:#f9f9f9;}
+.items-table tfoot tr td{border:1px solid #333;}
 .center{text-align:center;}
 .label{font-weight:bold;}
-.footer{margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end;}
-.stamp{border:3px solid #b22222;color:#b22222;padding:5px 10px;font-weight:bold;transform:rotate(-15deg);display:inline-block;margin-left:10px;text-transform:uppercase;font-size:14px;}
-.cursive{font-family:'Brush Script MT',cursive;font-size:24px;}
-.print-bar{text-align:center;margin-bottom:20px;}
-.print-bar button{padding:8px 20px;font-size:13px;border:none;border-radius:6px;cursor:pointer;margin:0 4px;}
+
+/* Footer */
+.footer{margin-top:48px;display:flex;justify-content:space-between;align-items:flex-end;}
+.stamp{border:3px solid #b22222;color:#b22222;padding:6px 12px;font-weight:bold;font-size:13px;transform:rotate(-15deg);display:inline-block;margin-left:12px;text-transform:uppercase;line-height:1.3;text-align:center;}
+.store-sig{font-size:14px;font-weight:600;color:#333;}
+.cursive{font-family:'Brush Script MT',cursive;font-size:26px;font-weight:normal;}
+
+/* Notes */
+.notes-block{margin-top:18px;padding:10px 14px;border:1px solid #ddd;background:#fafafa;font-size:13px;line-height:1.6;}
+
+/* Print bar (hidden on print) */
+.print-bar{text-align:center;margin-bottom:22px;}
+.print-bar button{padding:9px 22px;font-size:13px;border:none;border-radius:6px;cursor:pointer;margin:0 5px;font-family:inherit;}
 .btn-p{background:#2c3e50;color:#fff;}
 .btn-c{background:#e0e0e0;color:#333;}
-.notes-block{margin-top:20px;padding:12px 16px;border:1px solid #ddd;background:#fafafa;}
-.notes-block strong{display:block;margin-bottom:4px;}
 @media print{.print-bar{display:none;}body{background:#fff;padding:0;}}
 </style>
 </head>
@@ -259,47 +282,57 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f
 
 <div class="invoice-box">
 
+    <!-- Header: INVOICE + Logo -->
     <div class="header">
         <div class="title">INVOICE</div>
-        <div class="logo">
+        <div class="logo-wrap">
             <?php if ( $logo_url ) : ?>
             <img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( $store_name ); ?>">
             <?php else : ?>
-            <span class="logo-text"><?php echo esc_html( $store_name ); ?></span>
+            <div class="logo-wrap-text"><?php echo esc_html( $store_name ); ?></div>
             <?php endif; ?>
         </div>
     </div>
 
+    <!-- Store name + tagline -->
     <div class="company-name">
         <h1><?php echo esc_html( strtoupper( $store_name ) ); ?></h1>
         <?php if ( $store_tagline ) : ?>
-        <span class="tagline"><?php echo esc_html( strtoupper( $store_tagline ) ); ?></span>
+        <div><span class="tagline"><?php echo esc_html( strtoupper( $store_tagline ) ); ?></span></div>
         <?php endif; ?>
     </div>
 
+    <!-- Meta info: two columns -->
     <div class="meta-info">
         <div class="meta-left">
             <p><strong>Date:</strong> <?php echo esc_html( wp_date( 'F j, Y', strtotime( $invoice->invoice_date ) ) ); ?></p>
+            <p><strong>Payment method:</strong> <?php echo esc_html( $is_paid ? 'Paid' : 'Pending payment' ); ?></p>
             <?php if ( $invoice->customer_email ) : ?>
             <p><strong>Email:</strong> <?php echo esc_html( $invoice->customer_email ); ?></p>
             <?php endif; ?>
         </div>
         <div class="meta-right">
-            <p><strong>Invoice No:</strong> <?php echo esc_html( $invoice->invoice_number ); ?></p>
+            <p><strong>Invoice No:</strong> #<?php echo esc_html( $invoice->invoice_number ); ?></p>
             <?php if ( $invoice->customer_phone ) : ?>
             <p><strong>Phone:</strong> <?php echo esc_html( $invoice->customer_phone ); ?></p>
             <?php endif; ?>
-            <p><strong>Status:</strong> <?php echo esc_html( ucfirst( $invoice->status ) ); ?></p>
         </div>
     </div>
 
+    <!-- Addresses: Issued to / Ship to -->
     <div class="address-container">
         <div class="address-block">
             <h3>Issued to</h3>
             <p><?php echo esc_html( $invoice->customer_name ?: '—' ); ?></p>
-            <?php if ( $invoice->customer_address ) : ?>
-            <p><?php echo nl2br( esc_html( $invoice->customer_address ) ); ?></p>
-            <?php endif; ?>
+            <?php if ( $invoice->customer_address ) :
+                $addr_lines = explode( "\n", $invoice->customer_address );
+                foreach ( $addr_lines as $line ) :
+                    $line = trim( $line );
+                    if ( $line !== '' ) : ?>
+            <p><?php echo esc_html( $line ); ?></p>
+                    <?php endif;
+                endforeach;
+            endif; ?>
             <?php if ( $invoice->customer_phone ) : ?>
             <p class="blue-text"><?php echo esc_html( $invoice->customer_phone ); ?></p>
             <?php endif; ?>
@@ -310,19 +343,26 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f
         <div class="address-block">
             <h3>Ship to</h3>
             <p><?php echo esc_html( $invoice->customer_name ?: '—' ); ?></p>
-            <?php if ( $invoice->customer_address ) : ?>
-            <p><?php echo nl2br( esc_html( $invoice->customer_address ) ); ?></p>
-            <?php endif; ?>
+            <?php if ( $invoice->customer_address ) :
+                $addr_lines = explode( "\n", $invoice->customer_address );
+                foreach ( $addr_lines as $line ) :
+                    $line = trim( $line );
+                    if ( $line !== '' ) : ?>
+            <p><?php echo esc_html( $line ); ?></p>
+                    <?php endif;
+                endforeach;
+            endif; ?>
         </div>
     </div>
 
+    <!-- Line items table -->
     <table class="items-table">
         <thead>
             <tr>
-                <th>SKU</th>
+                <th style="width:90px;">SKU</th>
                 <th>Product</th>
-                <th class="center">Quantity</th>
-                <th>Price</th>
+                <th class="center" style="width:90px;">Quantity</th>
+                <th style="width:120px;">Price</th>
             </tr>
         </thead>
         <tbody>
@@ -356,21 +396,26 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f
                 <td colspan="3" class="label">Total:</td>
                 <td><strong><?php echo esc_html( $fmt( (float) $invoice->total ) ); ?></strong></td>
             </tr>
+            <tr>
+                <td colspan="3" class="label">Payment method:</td>
+                <td><?php echo esc_html( $is_paid ? 'Paid in full' : 'Pending payment' ); ?></td>
+            </tr>
         </tfoot>
     </table>
 
+    <!-- Notes -->
     <?php if ( ! empty( $invoice->notes ) ) : ?>
     <div class="notes-block">
-        <strong>Notes:</strong>
-        <span><?php echo nl2br( esc_html( $invoice->notes ) ); ?></span>
+        <strong>Notes:</strong> <?php echo nl2br( esc_html( $invoice->notes ) ); ?>
     </div>
     <?php endif; ?>
 
+    <!-- Footer: stamp + store signature -->
     <div class="footer">
-        <div class="payment-info">
-            <span>PAYMENT INFO:</span>
+        <div class="payment-info" style="display:flex;align-items:center;">
+            <span style="font-weight:600;font-size:13px;">PAYMENT INFO:</span>
             <?php if ( $is_paid ) : ?>
-            <div class="stamp">PAYMENT RECEIVED</div>
+            <div class="stamp">PAYMENT<br>RECEIVED</div>
             <?php endif; ?>
         </div>
         <div class="store-sig">
