@@ -52,6 +52,8 @@ class JESP_ERP_Ajax
             'erp_export_orders_csv',
             // v5: Historical customer sync
             'erp_sync_customers',
+            // v6: Brand revenue
+            'erp_get_brand_revenue',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -956,5 +958,106 @@ class JESP_ERP_Ajax
 
         fclose($output);
         exit;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Brand Revenue                                                       */
+    /* ------------------------------------------------------------------ */
+
+    private function detect_brand_taxonomy()
+    {
+        $candidates = array('product_brand', 'pwb-brand', 'yith_product_brand', 'pa_brand');
+        foreach ($candidates as $tax) {
+            if (taxonomy_exists($tax)) {
+                return $tax;
+            }
+        }
+        return '';
+    }
+
+    public function erp_get_brand_revenue()
+    {
+        $this->verify();
+
+        $date_from = sanitize_text_field($_POST['date_from'] ?? '');
+        $date_to   = sanitize_text_field($_POST['date_to'] ?? '');
+
+        $args = array(
+            'limit'   => -1,
+            'orderby' => 'date',
+            'order'   => 'DESC',
+            'status'  => array('wc-completed', 'wc-processing', 'wc-on-hold'),
+        );
+
+        if (!empty($date_from)) {
+            $args['date_created'] = $date_from . '...' . ($date_to ?: gmdate('Y-m-d'));
+        }
+
+        $orders       = wc_get_orders($args);
+        $brand_tax    = $this->detect_brand_taxonomy();
+        $brand_data   = array();
+        $no_brand     = array('revenue' => 0.0, 'order_ids' => array());
+
+        foreach ($orders as $order) {
+            $order_id = $order->get_id();
+            foreach ($order->get_items() as $item) {
+                $product_id = $item->get_product_id();
+                $line_total = (float) $item->get_total();
+                $assigned   = false;
+
+                if ($brand_tax) {
+                    $terms = wp_get_post_terms($product_id, $brand_tax, array('fields' => 'all'));
+                    if (!is_wp_error($terms) && !empty($terms)) {
+                        foreach ($terms as $term) {
+                            $key = $term->term_id;
+                            if (!isset($brand_data[$key])) {
+                                $brand_data[$key] = array('name' => $term->name, 'revenue' => 0.0, 'order_ids' => array());
+                            }
+                            $brand_data[$key]['revenue'] += $line_total;
+                            $brand_data[$key]['order_ids'][$order_id] = true;
+                            $assigned = true;
+                        }
+                    }
+                }
+
+                if (!$assigned) {
+                    $no_brand['revenue'] += $line_total;
+                    $no_brand['order_ids'][$order_id] = true;
+                }
+            }
+        }
+
+        $items        = array();
+        $total_revenue = 0.0;
+
+        foreach ($brand_data as $entry) {
+            $rev            = round($entry['revenue'], 2);
+            $total_revenue += $rev;
+            $items[]        = array(
+                'brand'       => $entry['name'],
+                'order_count' => count($entry['order_ids']),
+                'revenue'     => $rev,
+            );
+        }
+
+        // Sort by revenue descending.
+        usort($items, function ($a, $b) { return $b['revenue'] <=> $a['revenue']; });
+
+        // Append unbranded row if any.
+        if ($no_brand['revenue'] > 0 || !empty($no_brand['order_ids'])) {
+            $rev            = round($no_brand['revenue'], 2);
+            $total_revenue += $rev;
+            $items[]        = array(
+                'brand'       => 'Unbranded',
+                'order_count' => count($no_brand['order_ids']),
+                'revenue'     => $rev,
+            );
+        }
+
+        wp_send_json_success(array(
+            'items'         => $items,
+            'total_revenue' => round($total_revenue, 2),
+            'brand_tax'     => $brand_tax ?: 'none',
+        ));
     }
 }

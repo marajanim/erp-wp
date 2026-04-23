@@ -1178,6 +1178,8 @@
             } else if (tab === 'product-performance') {
                 loadOrders();
                 loadOrderChart();
+            } else if (tab === 'brand-revenue') {
+                loadBrandRevenue();
             }
         });
 
@@ -1208,6 +1210,8 @@
             const activeTab = $('#erp-orders-tabs .jesp-tab-btn.active').data('tab');
             if (activeTab === 'all-orders') {
                 loadAllOrders();
+            } else if (activeTab === 'brand-revenue') {
+                loadBrandRevenue();
             } else {
                 loadOrders();
                 loadOrderChart();
@@ -1219,6 +1223,8 @@
             const activeTab = $('#erp-orders-tabs .jesp-tab-btn.active').data('tab');
             if (activeTab === 'all-orders') {
                 loadAllOrders();
+            } else if (activeTab === 'brand-revenue') {
+                loadBrandRevenue();
             } else {
                 loadOrders();
                 loadOrderChart();
@@ -1544,6 +1550,60 @@
             $body.html(html);
 
             ERP.buildPagination('#erp-all-orders-pagination', page, res.data.pages, (p) => loadAllOrders(p));
+        });
+    }
+
+    function loadBrandRevenue() {
+        const $body = $('#erp-brand-body');
+        $body.html('<tr><td colspan="5" class="jesp-loading">' + (ERP.strings.loading || 'Loading...') + '</td></tr>');
+
+        ERP.ajax('erp_get_brand_revenue', {
+            date_from: $('#erp-orders-from').val() || '',
+            date_to:   $('#erp-orders-to').val() || '',
+        }).done(function (res) {
+            if (!res.success) {
+                $body.html('<tr><td colspan="5" class="jesp-loading">Error loading data.</td></tr>');
+                return;
+            }
+
+            const items = res.data.items || [];
+            const total = res.data.total_revenue || 0;
+
+            // Update summary cards.
+            $('#br-total-revenue').text(ERP.formatMoney(total));
+            const branded = items.filter(i => i.brand !== 'Unbranded');
+            $('#br-brand-count').text(branded.length);
+            $('#br-top-brand').text(branded.length ? branded[0].brand : '—');
+
+            if (!items.length) {
+                $body.html('<tr><td colspan="5" class="jesp-loading">No data for this period.</td></tr>');
+                return;
+            }
+
+            const maxRev = Math.max(...items.map(i => i.revenue));
+            let html = '';
+            items.forEach(item => {
+                const pct    = total > 0 ? ((item.revenue / total) * 100).toFixed(1) : '0.0';
+                const barPct = maxRev > 0 ? ((item.revenue / maxRev) * 100).toFixed(1) : '0';
+                const isUnbranded = item.brand === 'Unbranded';
+                const barColor = isUnbranded ? '#94a3b8' : '#3b82f6';
+                const nameBadge = isUnbranded
+                    ? `<span style="color:#64748b;font-style:italic;">${ERP.esc(item.brand)}</span>`
+                    : `<strong>${ERP.esc(item.brand)}</strong>`;
+
+                html += `<tr>
+                    <td>${nameBadge}</td>
+                    <td style="text-align:center;">${item.order_count}</td>
+                    <td><strong>${ERP.formatMoney(item.revenue)}</strong></td>
+                    <td style="text-align:center;">${pct}%</td>
+                    <td style="min-width:140px;">
+                        <div style="background:#e2e8f0;border-radius:4px;height:10px;overflow:hidden;">
+                            <div style="width:${barPct}%;height:100%;background:${barColor};border-radius:4px;transition:width .4s;"></div>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            $body.html(html);
         });
     }
 
