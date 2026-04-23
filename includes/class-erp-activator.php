@@ -7,8 +7,9 @@ class JESP_ERP_Activator {
         self::create_tables();
         update_option( 'jesp_erp_db_version', JESP_ERP_VERSION );
 
-        // Backfill customer data from all existing completed/processing orders.
+        // Seed ERP stock from existing WC stock quantities (skips products already tracked).
         if ( class_exists( 'WooCommerce' ) ) {
+            JESP_ERP_Stock::sync_stock_from_woocommerce();
             JESP_ERP_Customers::sync_all_historical_orders();
         }
     }

@@ -150,6 +150,30 @@ class JESP_ERP_Stock
     }
 
     /**
+     * On plugin activation, seed warehouse stock from existing WC _stock meta.
+     * Uses INSERT IGNORE so it never overwrites stock that was already set in ERP.
+     */
+    public static function sync_stock_from_woocommerce()
+    {
+        global $wpdb;
+        $table = JESP_ERP_Database::stock_locations_table();
+
+        $wpdb->query( // phpcs:ignore
+            "INSERT IGNORE INTO {$table} (product_id, location_type, location_name, quantity, min_stock)
+            SELECT
+                p.ID,
+                'warehouse',
+                '',
+                GREATEST(CAST(COALESCE(pm.meta_value, '0') AS SIGNED), 0),
+                0
+            FROM {$wpdb->posts} p
+            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_stock'
+            WHERE p.post_type = 'product'
+            AND p.post_status IN ('publish', 'draft')"
+        );
+    }
+
+    /**
      * Get stock value per product with category filter.
      * Returns items with stock * price calculations and totals.
      */
