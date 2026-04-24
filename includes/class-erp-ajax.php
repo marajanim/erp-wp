@@ -470,6 +470,14 @@ class JESP_ERP_Ajax
             'orderby' => sanitize_text_field($_POST['orderby'] ?? 'total_spent'),
             'order' => sanitize_text_field($_POST['order'] ?? 'DESC'),
         ));
+
+        // Append computed AOV to each customer row.
+        foreach ($result['items'] as &$customer) {
+            $count = (int) $customer->order_count;
+            $customer->aov = $count > 0 ? round( (float) $customer->total_spent / $count, 2 ) : 0;
+        }
+        unset($customer);
+
         wp_send_json_success($result);
     }
 
