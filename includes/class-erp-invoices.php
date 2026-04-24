@@ -180,17 +180,30 @@ class JESP_ERP_Invoices {
     /*  Generate printable HTML page                                       */
     /* ------------------------------------------------------------------ */
     public static function generate_print_html( $invoice ) {
-        $store_name    = get_bloginfo( 'name' );
+        // Load company settings (falls back to WP site defaults when empty).
+        $co = (array) get_option( 'jesp_erp_invoice_company', array() );
+
+        $store_name    = ! empty( $co['name'] ) ? $co['name'] : get_bloginfo( 'name' );
         $store_tagline = get_bloginfo( 'description' );
+        $co_address    = $co['address'] ?? '';
+        $co_phone      = $co['phone']   ?? '';
+        $co_email      = $co['email']   ?? '';
+        $inv_footer    = $co['footer']  ?? '';
+        $inv_terms     = $co['terms']   ?? '';
         $currency      = get_woocommerce_currency_symbol();
 
-        // Resolve site logo (theme custom logo → site icon → text fallback).
-        $logo_url       = '';
-        $custom_logo_id = get_theme_mod( 'custom_logo' );
-        if ( $custom_logo_id ) {
-            $logo_src = wp_get_attachment_image_src( $custom_logo_id, array( 160, 80 ) );
-            if ( $logo_src ) {
-                $logo_url = $logo_src[0];
+        // Resolve logo: custom option → theme logo → site icon → text fallback.
+        $logo_url = '';
+        if ( ! empty( $co['logo_url'] ) ) {
+            $logo_url = esc_url( $co['logo_url'] );
+        }
+        if ( ! $logo_url ) {
+            $custom_logo_id = get_theme_mod( 'custom_logo' );
+            if ( $custom_logo_id ) {
+                $logo_src = wp_get_attachment_image_src( $custom_logo_id, array( 160, 80 ) );
+                if ( $logo_src ) {
+                    $logo_url = $logo_src[0];
+                }
             }
         }
         if ( ! $logo_url ) {
@@ -319,7 +332,7 @@ h1,h2,h3,h4,p{margin:0;padding:0;}
         </div>
     </div>
 
-    <!-- Addresses: Issued to / Ship to -->
+    <!-- Addresses: Issued to / Ship to / Issued from (company) -->
     <div class="address-container">
         <div class="address-block">
             <h3>Issued to</h3>
@@ -353,6 +366,27 @@ h1,h2,h3,h4,p{margin:0;padding:0;}
                 endforeach;
             endif; ?>
         </div>
+        <?php if ( $co_address || $co_phone || $co_email ) : ?>
+        <div class="address-block">
+            <h3>Issued from</h3>
+            <p><?php echo esc_html( $store_name ); ?></p>
+            <?php if ( $co_address ) :
+                $co_addr_lines = explode( "\n", $co_address );
+                foreach ( $co_addr_lines as $co_line ) :
+                    $co_line = trim( $co_line );
+                    if ( $co_line !== '' ) : ?>
+            <p><?php echo esc_html( $co_line ); ?></p>
+                    <?php endif;
+                endforeach;
+            endif; ?>
+            <?php if ( $co_phone ) : ?>
+            <p class="blue-text"><?php echo esc_html( $co_phone ); ?></p>
+            <?php endif; ?>
+            <?php if ( $co_email ) : ?>
+            <p><?php echo esc_html( $co_email ); ?></p>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Line items table -->
@@ -407,6 +441,20 @@ h1,h2,h3,h4,p{margin:0;padding:0;}
     <?php if ( ! empty( $invoice->notes ) ) : ?>
     <div class="notes-block">
         <strong>Notes:</strong> <?php echo nl2br( esc_html( $invoice->notes ) ); ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Terms & Conditions -->
+    <?php if ( ! empty( $inv_terms ) ) : ?>
+    <div class="notes-block" style="margin-top:10px;">
+        <strong>Terms &amp; Conditions:</strong> <?php echo nl2br( esc_html( $inv_terms ) ); ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Dynamic footer text -->
+    <?php if ( ! empty( $inv_footer ) ) : ?>
+    <div style="text-align:center;margin-top:18px;font-size:13px;color:#64748b;font-style:italic;">
+        <?php echo esc_html( $inv_footer ); ?>
     </div>
     <?php endif; ?>
 

@@ -147,5 +147,117 @@ endforeach; ?>
                 </div>
             </div>
         </div>
+    <!-- Company Info (Invoice) -->
+    <div class="jesp-erp-card" style="margin-top:0;" id="jesp-invoice-info-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="margin:0;"><span class="dashicons dashicons-building" style="color:#6366f1;margin-right:6px;"></span><?php esc_html_e('Company Info (Invoice)', 'jesp-erp'); ?></h2>
+            <button class="button button-primary" id="jesp-invoice-info-save"><?php esc_html_e('Save Company Info', 'jesp-erp'); ?></button>
+        </div>
+        <p style="color:#64748b;font-size:13px;margin-bottom:16px;">
+            <?php esc_html_e('These details appear on every printed invoice PDF. Leave blank to fall back to WordPress site defaults.', 'jesp-erp'); ?>
+        </p>
+
+        <?php
+$inv_info = (array)get_option('jesp_erp_invoice_company', array());
+$inv_name = $inv_info['name'] ?? '';
+$inv_address = $inv_info['address'] ?? '';
+$inv_phone = $inv_info['phone'] ?? '';
+$inv_email = $inv_info['email'] ?? '';
+$inv_footer = $inv_info['footer'] ?? '';
+$inv_terms = $inv_info['terms'] ?? '';
+$inv_logo = $inv_info['logo_url'] ?? '';
+?>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="jesp-form-group">
+                <label for="jesp-inv-name" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#64748b;text-transform:uppercase;letter-spacing:.3px;">
+                    <?php esc_html_e('Company Name', 'jesp-erp'); ?>
+                </label>
+                <input type="text" id="jesp-inv-name" class="jesp-input" value="<?php echo esc_attr($inv_name); ?>" placeholder="<?php esc_attr_e('e.g. Sinogems', 'jesp-erp'); ?>">
+            </div>
+            <div class="jesp-form-group">
+                <label for="jesp-inv-phone" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#64748b;text-transform:uppercase;letter-spacing:.3px;">
+                    <?php esc_html_e('Phone', 'jesp-erp'); ?>
+                </label>
+                <input type="text" id="jesp-inv-phone" class="jesp-input" value="<?php echo esc_attr($inv_phone); ?>" placeholder="+1 555 000 0000">
+            </div>
+            <div class="jesp-form-group" style="grid-column:1/-1;">
+                <label for="jesp-inv-address" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#64748b;text-transform:uppercase;letter-spacing:.3px;">
+                    <?php esc_html_e('Address', 'jesp-erp'); ?>
+                </label>
+                <textarea id="jesp-inv-address" class="jesp-input" rows="2" placeholder="123 Business St, City, Country"><?php echo esc_textarea($inv_address); ?></textarea>
+            </div>
+            <div class="jesp-form-group">
+                <label for="jesp-inv-email" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#64748b;text-transform:uppercase;letter-spacing:.3px;">
+                    <?php esc_html_e('Email', 'jesp-erp'); ?>
+                </label>
+                <input type="email" id="jesp-inv-email" class="jesp-input" value="<?php echo esc_attr($inv_email); ?>" placeholder="info@company.com">
+            </div>
+            <div class="jesp-form-group">
+                <label for="jesp-inv-logo" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#64748b;text-transform:uppercase;letter-spacing:.3px;">
+                    <?php esc_html_e('Logo URL (optional)', 'jesp-erp'); ?>
+                </label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="url" id="jesp-inv-logo" class="jesp-input" value="<?php echo esc_attr($inv_logo); ?>" placeholder="https://...">
+                    <button type="button" class="button" id="jesp-inv-logo-media"><?php esc_html_e('Select', 'jesp-erp'); ?></button>
+                </div>
+                <?php if ($inv_logo): ?>
+                <img src="<?php echo esc_url($inv_logo); ?>" alt="" style="margin-top:8px;max-height:60px;border-radius:4px;border:1px solid #e2e8f0;">
+                <?php
+endif; ?>
+            </div>
+            <div class="jesp-form-group" style="grid-column:1/-1;">
+                <label for="jesp-inv-footer" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#64748b;text-transform:uppercase;letter-spacing:.3px;">
+                    <?php esc_html_e('Invoice Footer Text', 'jesp-erp'); ?>
+                </label>
+                <input type="text" id="jesp-inv-footer" class="jesp-input" value="<?php echo esc_attr($inv_footer); ?>" placeholder="<?php esc_attr_e('Thank you for your business!', 'jesp-erp'); ?>">
+            </div>
+            <div class="jesp-form-group" style="grid-column:1/-1;">
+                <label for="jesp-inv-terms" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#64748b;text-transform:uppercase;letter-spacing:.3px;">
+                    <?php esc_html_e('Terms & Conditions', 'jesp-erp'); ?>
+                </label>
+                <textarea id="jesp-inv-terms" class="jesp-input" rows="3" placeholder="<?php esc_attr_e('Payment due within 30 days...', 'jesp-erp'); ?>"><?php echo esc_textarea($inv_terms); ?></textarea>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+(function ($) {
+    // Save company info via AJAX.
+    $('#jesp-invoice-info-save').on('click', function () {
+        var $btn = $(this).prop('disabled', true).text('<?php echo esc_js(__('Saving…', 'jesp-erp')); ?>');
+        $.post(jespErp.ajaxUrl, {
+            action: 'erp_save_invoice_company',
+            nonce:  jespErp.nonce,
+            name:     $('#jesp-inv-name').val(),
+            address:  $('#jesp-inv-address').val(),
+            phone:    $('#jesp-inv-phone').val(),
+            email:    $('#jesp-inv-email').val(),
+            logo_url: $('#jesp-inv-logo').val(),
+            footer:   $('#jesp-inv-footer').val(),
+            terms:    $('#jesp-inv-terms').val(),
+        }).done(function (res) {
+            if (res.success) {
+                ERP.toast('<?php echo esc_js(__('Company info saved.', 'jesp-erp')); ?>');
+            } else {
+                ERP.toast(res.data.message || '<?php echo esc_js(__('Error saving.', 'jesp-erp')); ?>', 'error');
+            }
+        }).always(function () {
+            $btn.prop('disabled', false).text('<?php echo esc_js(__('Save Company Info', 'jesp-erp')); ?>');
+        });
+    });
+
+    // WordPress media library picker for logo.
+    $('#jesp-inv-logo-media').on('click', function (e) {
+        e.preventDefault();
+        if (typeof wp === 'undefined' || !wp.media) { return; }
+        var frame = wp.media({ title: '<?php echo esc_js(__('Select Logo', 'jesp-erp')); ?>', multiple: false, library: { type: 'image' } });
+        frame.on('select', function () {
+            var attachment = frame.state().get('selection').first().toJSON();
+            $('#jesp-inv-logo').val(attachment.url);
+        });
+        frame.open();
+    });
+})(jQuery);
+</script>

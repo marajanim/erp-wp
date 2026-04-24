@@ -71,6 +71,8 @@ class JESP_ERP_Ajax
             'erp_get_expenses',
             'erp_save_expense',
             'erp_delete_expense',
+            // v12: Invoice company settings
+            'erp_save_invoice_company',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -1338,5 +1340,26 @@ class JESP_ERP_Ajax
 
         $result = JESP_ERP_Finance::delete_expense($id);
         wp_send_json_success($result);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  v12: Invoice company info save                                     */
+    /* ------------------------------------------------------------------ */
+    public function erp_save_invoice_company()
+    {
+        $this->verify();
+
+        $data = array(
+            'name'    => sanitize_text_field( wp_unslash( $_POST['name']    ?? '' ) ),
+            'address' => sanitize_textarea_field( wp_unslash( $_POST['address'] ?? '' ) ),
+            'phone'   => sanitize_text_field( wp_unslash( $_POST['phone']   ?? '' ) ),
+            'email'   => sanitize_email( wp_unslash( $_POST['email']        ?? '' ) ),
+            'logo_url'=> esc_url_raw( wp_unslash( $_POST['logo_url']        ?? '' ) ),
+            'footer'  => sanitize_text_field( wp_unslash( $_POST['footer']  ?? '' ) ),
+            'terms'   => sanitize_textarea_field( wp_unslash( $_POST['terms'] ?? '' ) ),
+        );
+
+        update_option( 'jesp_erp_invoice_company', $data );
+        wp_send_json_success( array( 'message' => __( 'Company info saved.', 'jesp-erp' ) ) );
     }
 }
