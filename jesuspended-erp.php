@@ -1,11 +1,11 @@
 <?php
 /**
- * Plugin Name: JesusPended ERP - Inventory & Customer Manager
- * Plugin URI:  https://example.com/jesp-erp
+ * Plugin Name: Woocommerce Sales Dashboard - Inventory & Customer Manager
+ * Plugin URI:  https://maraj.net
  * Description: ERP-style inventory and customer management system fully integrated with WooCommerce. Manage stock by location, bulk discounts, customer insights, and analytics.
  * Version:     1.0.0
- * Author:      ERP Dev Team
- * Author URI:  https://example.com
+ * Author:      Md Marajus Salehin Anim
+ * Author URI:  https://maraj.net
  * License:     GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: jesp-erp
