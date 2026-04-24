@@ -77,7 +77,6 @@ class JESP_ERP_Orders
             SELECT
                 oim_pid.meta_value as product_id,
                 p.post_title as product_name,
-                pm_sku.meta_value as sku,
                 COUNT(DISTINCT oi.order_id) as order_count,
                 SUM(oim_qty.meta_value) as total_qty_sold,
                 SUM(oim_total.meta_value) as total_revenue,\r\n                GROUP_CONCAT(DISTINCT oi.order_id ORDER BY oi.order_id DESC) as order_ids
@@ -87,9 +86,8 @@ class JESP_ERP_Orders
             LEFT JOIN {$itemmeta} oim_qty ON oi.order_item_id = oim_qty.order_item_id AND oim_qty.meta_key = '_qty'
             LEFT JOIN {$itemmeta} oim_total ON oi.order_item_id = oim_total.order_item_id AND oim_total.meta_key = '_line_total'
             LEFT JOIN {$wpdb->posts} p ON oim_pid.meta_value = p.ID
-            LEFT JOIN {$wpdb->postmeta} pm_sku ON oim_pid.meta_value = pm_sku.post_id AND pm_sku.meta_key = '_sku'
             WHERE {$where_clause}
-            GROUP BY oim_pid.meta_value, p.post_title, pm_sku.meta_value
+            GROUP BY oim_pid.meta_value, p.post_title
             ORDER BY total_revenue DESC
             LIMIT %d OFFSET %d
         ";
