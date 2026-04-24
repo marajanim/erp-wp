@@ -1133,6 +1133,7 @@ class JESP_ERP_Ajax
             'tax_rate'         => floatval($_POST['tax_rate']      ?? 0),
             'total'            => floatval($_POST['total']         ?? 0),
             'notes'            => sanitize_textarea_field($_POST['notes']        ?? ''),
+            'salesperson_name' => sanitize_text_field($_POST['salesperson_name'] ?? ''),
             'status'           => sanitize_text_field($_POST['status']           ?? 'draft'),
         );
 

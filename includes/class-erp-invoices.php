@@ -39,6 +39,7 @@ class JESP_ERP_Invoices {
             tax_rate         DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
             total            DECIMAL(12,2) NOT NULL DEFAULT 0.00,
             notes            TEXT          NOT NULL,
+            salesperson_name VARCHAR(200)  NOT NULL DEFAULT '',
             status           VARCHAR(20)   NOT NULL DEFAULT 'draft',
             created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
@@ -468,7 +469,11 @@ h1,h2,h3,h4,p{margin:0;padding:0;}
             <?php endif; ?>
         </div>
         <div class="store-sig">
+            <?php if ( ! empty( $invoice->salesperson_name ) ) : ?>
+            Sold by: <span class="cursive"><?php echo esc_html( $invoice->salesperson_name ); ?></span>
+            <?php else : ?>
             STORE: <span class="cursive"><?php echo esc_html( $store_name ); ?></span>
+            <?php endif; ?>
         </div>
     </div>
 

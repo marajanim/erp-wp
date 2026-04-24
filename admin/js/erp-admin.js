@@ -2086,7 +2086,7 @@
             $('#inv-number').val('');
             $('#inv-date').val(new Date().toISOString().slice(0, 10));
             $('#inv-status').val('draft');
-            $('#inv-customer-name, #inv-customer-phone, #inv-customer-email, #inv-customer-address, #inv-notes').val('');
+            $('#inv-customer-name, #inv-customer-phone, #inv-customer-email, #inv-customer-address, #inv-notes, #inv-salesperson').val('');
             $('#inv-discount-type').val('none');
             $('#inv-discount-value').val(0);
             $('#inv-tax-rate').val(0);
@@ -2104,6 +2104,7 @@
             $('#inv-customer-email').val(inv.customer_email);
             $('#inv-customer-address').val(inv.customer_address);
             $('#inv-notes').val(inv.notes);
+            $('#inv-salesperson').val(inv.salesperson_name || '');
             $('#inv-discount-type').val(inv.discount_type);
             $('#inv-discount-value').val(inv.discount_value);
             $('#inv-tax-rate').val(inv.tax_rate);
@@ -2215,6 +2216,7 @@
                 tax_rate: $('#inv-tax-rate').val(),
                 total: total,
                 notes: $('#inv-notes').val().trim(),
+                salesperson_name: $('#inv-salesperson').val().trim(),
                 status: $('#inv-status').val(),
                 items: JSON.stringify(items),
             }).done(function (res) {

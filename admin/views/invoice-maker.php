@@ -154,6 +154,8 @@
                 <div class="jesp-erp-card">
                     <h3 style="margin-top:0;"><span class="dashicons dashicons-editor-help" style="color:#6366f1;"></span> <?php esc_html_e('Notes', 'jesp-erp'); ?></h3>
                     <textarea id="inv-notes" rows="4" class="large-text" placeholder="<?php esc_attr_e('Payment terms, delivery info, thank you message…', 'jesp-erp'); ?>"></textarea>
+                    <p style="margin:12px 0 4px;font-weight:600;"><?php esc_html_e('Sold by (Salesperson)', 'jesp-erp'); ?></p>
+                    <input type="text" id="inv-salesperson" class="regular-text" placeholder="<?php esc_attr_e('Enter salesperson name…', 'jesp-erp'); ?>">
                 </div>
             </div>
             <div class="jesp-erp-col-6">

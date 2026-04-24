@@ -30,9 +30,9 @@ class JESP_ERP_Admin
 
     public function maybe_create_invoice_tables()
     {
-        if (get_option('jesp_erp_invoices_db') !== '1.0') {
+        if (get_option('jesp_erp_invoices_db') !== '1.1') {
             JESP_ERP_Invoices::create_tables();
-            update_option('jesp_erp_invoices_db', '1.0');
+            update_option('jesp_erp_invoices_db', '1.1');
         }
     }
 
