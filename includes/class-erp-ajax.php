@@ -487,6 +487,11 @@ class JESP_ERP_Ajax
             'per_page' => absint($_POST['per_page'] ?? 20),
             'page' => absint($_POST['page'] ?? 1),
         ));
+
+        // Compute average order value from existing fields — no extra query needed.
+        $order_count = (int) $customer->order_count;
+        $customer->aov = $order_count > 0 ? round( (float) $customer->total_spent / $order_count, 2 ) : 0;
+
         wp_send_json_success(array('customer' => $customer, 'orders' => $orders));
     }
 
