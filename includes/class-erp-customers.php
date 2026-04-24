@@ -151,7 +151,8 @@ class JESP_ERP_Customers {
                         'total'=> $item->get_total(),
                     );
                 }
-                $order_row->status_label = wc_get_order_status_name( $order->get_status() );
+                $order_row->status_label  = wc_get_order_status_name( $order->get_status() );
+                $order_row->order_number  = $order->get_order_number();
             }
         }
 

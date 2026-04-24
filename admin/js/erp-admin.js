@@ -471,7 +471,7 @@
                 orders.items.forEach(o => {
                     const itemsList = (o.items || []).map(i => `${i.name} × ${i.qty}`).join(', ') || '—';
                     html += `<tr>
-                        <td>#${o.order_id}</td>
+                        <td>#${o.order_number || o.order_id}</td>
                         <td>${ERP.formatDate(o.order_date)}</td>
                         <td>${itemsList}</td>
                         <td><span class="jesp-badge jesp-badge-blue">${o.status_label || o.status}</span></td>
@@ -1892,7 +1892,7 @@
                 orders.items.forEach(o => {
                     const itemsList = (o.items || []).map(i => `${i.name} × ${i.qty}`).join(', ') || '—';
                     html += `<tr>
-                        <td>#${o.order_id}</td>
+                        <td>#${o.order_number || o.order_id}</td>
                         <td>${ERP.formatDate(o.order_date)}</td>
                         <td>${itemsList}</td>
                         <td><span class="jesp-badge jesp-badge-blue">${o.status_label || o.status}</span></td>
