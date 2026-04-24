@@ -127,6 +127,13 @@ class JESP_ERP_Ajax
             'page' => 1,
         ));
 
+        foreach ($result['items'] as &$item) {
+            $pid = absint($item->product_id);
+            $product = wc_get_product($pid);
+            $item->sku = $product ? $product->get_sku() : '';
+        }
+        unset($item);
+
         wp_send_json_success($result);
     }
 
@@ -147,7 +154,9 @@ class JESP_ERP_Ajax
 
         foreach ($result['items'] as &$item) {
             $pid = absint($item->product_id);
+            $product = wc_get_product($pid);
             $item->thumbnail_url = get_the_post_thumbnail_url($pid, 'thumbnail') ?: '';
+            $item->sku = $product ? $product->get_sku() : '';
         }
         unset($item);
 
