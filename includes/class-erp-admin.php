@@ -222,8 +222,15 @@ class JESP_ERP_Admin
             wp_localize_script('jquery', 'jespErpCodeEditor', $editor_settings);
         }
 
-        // WordPress media uploader (for Quick Edit image selection).
-        wp_enqueue_media();
+        // WordPress media uploader — only load on pages that use image picking.
+        $media_pages = array(
+            'toplevel_page_jesp-erp',
+            'erp-manager_page_jesp-erp-stock',
+            'erp-manager_page_jesp-erp-settings',
+        );
+        if (in_array($hook, $media_pages, true)) {
+            wp_enqueue_media();
+        }
 
         // Chart.js from CDN.
         wp_enqueue_script(

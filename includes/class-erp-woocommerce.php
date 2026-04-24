@@ -112,6 +112,9 @@ class JESP_ERP_WooCommerce {
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
             return;
         }
+        if ( ! current_user_can( 'edit_post', $product_id ) ) {
+            return;
+        }
 
         $product = wc_get_product( $product_id );
         if ( ! $product ) {

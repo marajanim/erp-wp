@@ -1023,9 +1023,9 @@ class JESP_ERP_Ajax
     {
         $this->verify();
 
-        // Save custom CSS.
+        // Save custom CSS — strip all HTML tags then block any style-tag breakout (case-insensitive).
         $css = wp_strip_all_tags(wp_unslash($_POST['custom_css'] ?? ''));
-        $css = str_replace('</style', '', $css);
+        $css = preg_replace('/<\/?style\b[^>]*>/i', '', $css);
         update_option('jesp_erp_custom_css', $css);
 
         // Save tab visibility.
@@ -1211,6 +1211,7 @@ class JESP_ERP_Ajax
         $brand_tax    = $this->detect_brand_taxonomy();
         $brand_data   = array();
         $no_brand     = array('revenue' => 0.0, 'order_ids' => array());
+        $terms_cache  = array(); // Per-product cache — eliminates N+1 wp_get_post_terms calls.
 
         foreach ($orders as $order) {
             $order_id = $order->get_id();
@@ -1220,7 +1221,10 @@ class JESP_ERP_Ajax
                 $assigned   = false;
 
                 if ($brand_tax) {
-                    $terms = wp_get_post_terms($product_id, $brand_tax, array('fields' => 'all'));
+                    if (!array_key_exists($product_id, $terms_cache)) {
+                        $terms_cache[$product_id] = wp_get_post_terms($product_id, $brand_tax, array('fields' => 'all'));
+                    }
+                    $terms = $terms_cache[$product_id];
                     if (!is_wp_error($terms) && !empty($terms)) {
                         foreach ($terms as $term) {
                             $key = $term->term_id;

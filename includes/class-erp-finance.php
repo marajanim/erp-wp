@@ -41,50 +41,107 @@ class JESP_ERP_Finance
 
     public static function get_finance_summary($date_from, $date_to)
     {
-        $args = array(
-            'status'       => array('wc-completed', 'wc-processing'),
-            'date_created' => $date_from . '...' . $date_to,
-            'limit'        => -1,
-        );
-
-        $orders = wc_get_orders($args);
-
-        $total_revenue  = 0;
-        $total_tax      = 0;
-        $total_shipping = 0;
-        $total_discount = 0;
-        $order_count    = count($orders);
-
-        foreach ($orders as $order) {
-            $total_revenue  += (float) $order->get_total();
-            $total_tax      += (float) $order->get_total_tax();
-            $total_shipping += (float) $order->get_shipping_total();
-            $total_discount += (float) $order->get_discount_total();
-        }
-
-        $refund_args = array(
-            'status'       => array('wc-refunded'),
-            'date_created' => $date_from . '...' . $date_to,
-            'limit'        => -1,
-        );
-        $refunded_orders = wc_get_orders($refund_args);
-        $total_refunds = 0;
-        foreach ($refunded_orders as $order) {
-            $total_refunds += abs((float) $order->get_total());
-        }
-
-        foreach ($orders as $order) {
-            $refunds = $order->get_refunds();
-            foreach ($refunds as $refund) {
-                $total_refunds += abs((float) $refund->get_total());
-            }
-        }
-
         global $wpdb;
+        $use_hpos = self::is_hpos_enabled();
+
+        if ($use_hpos) {
+            $orders_table = $wpdb->prefix . 'wc_orders';
+
+            // Single-row aggregate — replaces loading all WC_Order objects.
+            $stats = $wpdb->get_row($wpdb->prepare(
+                "SELECT COUNT(*) as order_count,
+                        COALESCE(SUM(total_amount), 0)    as total_revenue,
+                        COALESCE(SUM(tax_amount), 0)      as total_tax,
+                        COALESCE(SUM(shipping_total), 0)  as total_shipping,
+                        COALESCE(SUM(discount_total), 0)  as total_discount
+                 FROM {$orders_table}
+                 WHERE status IN ('wc-completed','wc-processing')
+                 AND date_created_gmt >= %s AND date_created_gmt <= %s",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
+
+            $total_revenue  = (float) ($stats->total_revenue  ?? 0);
+            $total_tax      = (float) ($stats->total_tax      ?? 0);
+            $total_shipping = (float) ($stats->total_shipping ?? 0);
+            $total_discount = (float) ($stats->total_discount ?? 0);
+            $order_count    = (int)   ($stats->order_count    ?? 0);
+
+            // Fully refunded orders.
+            $total_refunds = (float) $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(SUM(ABS(total_amount)), 0)
+                 FROM {$orders_table}
+                 WHERE status = 'wc-refunded'
+                 AND date_created_gmt >= %s AND date_created_gmt <= %s",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
+
+            // Partial refunds (child orders of completed/processing parents).
+            $total_refunds += (float) $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(SUM(ABS(r.total_amount)), 0)
+                 FROM {$orders_table} r
+                 INNER JOIN {$orders_table} p ON r.parent_order_id = p.id
+                     AND p.status IN ('wc-completed','wc-processing')
+                     AND p.date_created_gmt >= %s AND p.date_created_gmt <= %s
+                 WHERE r.type = 'shop_order_refund'",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
+
+        } else {
+            // Legacy posts mode — single pivot query replaces full object loop.
+            $stats = $wpdb->get_row($wpdb->prepare(
+                "SELECT COUNT(DISTINCT o.ID) as order_count,
+                        COALESCE(SUM(CASE WHEN pm.meta_key = '_order_total'    THEN CAST(pm.meta_value AS DECIMAL(12,2)) ELSE 0 END), 0) as total_revenue,
+                        COALESCE(SUM(CASE WHEN pm.meta_key = '_order_tax'      THEN CAST(pm.meta_value AS DECIMAL(12,2)) ELSE 0 END), 0) as total_tax,
+                        COALESCE(SUM(CASE WHEN pm.meta_key = '_order_shipping' THEN CAST(pm.meta_value AS DECIMAL(12,2)) ELSE 0 END), 0) as total_shipping,
+                        COALESCE(SUM(CASE WHEN pm.meta_key = '_cart_discount'  THEN CAST(pm.meta_value AS DECIMAL(12,2)) ELSE 0 END), 0) as total_discount
+                 FROM {$wpdb->posts} o
+                 INNER JOIN {$wpdb->postmeta} pm ON o.ID = pm.post_id
+                     AND pm.meta_key IN ('_order_total','_order_tax','_order_shipping','_cart_discount')
+                 WHERE o.post_type = 'shop_order'
+                 AND o.post_status IN ('wc-completed','wc-processing')
+                 AND o.post_date_gmt >= %s AND o.post_date_gmt <= %s",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
+
+            $total_revenue  = (float) ($stats->total_revenue  ?? 0);
+            $total_tax      = (float) ($stats->total_tax      ?? 0);
+            $total_shipping = (float) ($stats->total_shipping ?? 0);
+            $total_discount = (float) ($stats->total_discount ?? 0);
+            $order_count    = (int)   ($stats->order_count    ?? 0);
+
+            // Fully refunded orders.
+            $total_refunds = (float) $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(SUM(ABS(CAST(pm.meta_value AS DECIMAL(12,2)))), 0)
+                 FROM {$wpdb->posts} o
+                 INNER JOIN {$wpdb->postmeta} pm ON o.ID = pm.post_id AND pm.meta_key = '_order_total'
+                 WHERE o.post_type = 'shop_order' AND o.post_status = 'wc-refunded'
+                 AND o.post_date_gmt >= %s AND o.post_date_gmt <= %s",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
+
+            // Partial refunds on completed/processing orders.
+            $total_refunds += (float) $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(SUM(ABS(CAST(pm.meta_value AS DECIMAL(12,2)))), 0)
+                 FROM {$wpdb->posts} refund
+                 INNER JOIN {$wpdb->postmeta} pm ON refund.ID = pm.post_id AND pm.meta_key = '_refund_amount'
+                 INNER JOIN {$wpdb->posts} parent ON refund.post_parent = parent.ID
+                     AND parent.post_type = 'shop_order'
+                     AND parent.post_status IN ('wc-completed','wc-processing')
+                     AND parent.post_date_gmt >= %s AND parent.post_date_gmt <= %s
+                 WHERE refund.post_type = 'shop_order_refund'",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
+        }
+
         $expenses_table = self::expenses_table();
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$expenses_table}'") === $expenses_table;
         $total_expenses = 0;
-        if ($table_exists) {
+        if ($wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $expenses_table ) ) === $expenses_table) {
             $total_expenses = (float) $wpdb->get_var($wpdb->prepare(
                 "SELECT COALESCE(SUM(amount), 0) FROM {$expenses_table} WHERE expense_date >= %s AND expense_date <= %s",
                 $date_from,
@@ -108,33 +165,55 @@ class JESP_ERP_Finance
 
     public static function get_payment_methods($date_from, $date_to)
     {
-        $orders = wc_get_orders(array(
-            'status'       => array('wc-completed', 'wc-processing'),
-            'date_created' => $date_from . '...' . $date_to,
-            'limit'        => -1,
-        ));
+        global $wpdb;
+        $use_hpos = self::is_hpos_enabled();
 
-        $methods = array();
-        foreach ($orders as $order) {
-            $key   = $order->get_payment_method();
-            $label = $order->get_payment_method_title() ?: $key ?: 'Unknown';
-            if (!isset($methods[$key])) {
-                $methods[$key] = array(
-                    'method'      => $key,
-                    'label'       => $label,
-                    'total'       => 0,
-                    'order_count' => 0,
-                );
-            }
-            $methods[$key]['total']       += (float) $order->get_total();
-            $methods[$key]['order_count'] += 1;
+        if ($use_hpos) {
+            $orders_table = $wpdb->prefix . 'wc_orders';
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT payment_method as method,
+                        payment_method_title as label,
+                        COALESCE(SUM(total_amount), 0) as total,
+                        COUNT(*) as order_count
+                 FROM {$orders_table}
+                 WHERE status IN ('wc-completed','wc-processing')
+                 AND date_created_gmt >= %s AND date_created_gmt <= %s
+                 GROUP BY payment_method, payment_method_title
+                 ORDER BY total DESC",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
+        } else {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT pm_method.meta_value as method,
+                        MAX(pm_title.meta_value) as label,
+                        COALESCE(SUM(CAST(pm_total.meta_value AS DECIMAL(12,2))), 0) as total,
+                        COUNT(DISTINCT o.ID) as order_count
+                 FROM {$wpdb->posts} o
+                 INNER JOIN {$wpdb->postmeta} pm_method ON o.ID = pm_method.post_id AND pm_method.meta_key = '_payment_method'
+                 LEFT  JOIN {$wpdb->postmeta} pm_title  ON o.ID = pm_title.post_id  AND pm_title.meta_key  = '_payment_method_title'
+                 LEFT  JOIN {$wpdb->postmeta} pm_total  ON o.ID = pm_total.post_id  AND pm_total.meta_key  = '_order_total'
+                 WHERE o.post_type = 'shop_order'
+                 AND o.post_status IN ('wc-completed','wc-processing')
+                 AND o.post_date_gmt >= %s AND o.post_date_gmt <= %s
+                 GROUP BY pm_method.meta_value
+                 ORDER BY total DESC",
+                $date_from . ' 00:00:00',
+                $date_to   . ' 23:59:59'
+            ));
         }
 
-        usort($methods, function ($a, $b) {
-            return $b['total'] <=> $a['total'];
-        });
+        $methods = array();
+        foreach ($rows as $row) {
+            $methods[] = array(
+                'method'      => $row->method,
+                'label'       => $row->label ?: $row->method ?: 'Unknown',
+                'total'       => round((float) $row->total, 2),
+                'order_count' => (int) $row->order_count,
+            );
+        }
 
-        return array_values($methods);
+        return $methods;
     }
 
     public static function get_daily_revenue($date_from, $date_to)

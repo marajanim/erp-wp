@@ -336,6 +336,9 @@ class JESP_ERP_Stock
         // Sync total stock to WooCommerce product.
         self::sync_wc_stock($product_id);
 
+        // Invalidate low-stock count cache so next read is fresh.
+        delete_transient( 'jesp_erp_low_stock_count' );
+
         return array(
             'old_qty' => $old_qty,
             'new_qty' => $new_qty,
@@ -399,10 +402,15 @@ class JESP_ERP_Stock
      */
     public static function get_low_stock_count()
     {
+        $cached = get_transient( 'jesp_erp_low_stock_count' );
+        if ( false !== $cached ) {
+            return (int) $cached;
+        }
+
         global $wpdb;
         $table = JESP_ERP_Database::stock_locations_table();
 
-        return (int)$wpdb->get_var(
+        $count = (int)$wpdb->get_var(
             "SELECT COUNT(DISTINCT product_id) FROM (
                 SELECT product_id, SUM(quantity) as total_qty, MAX(min_stock) as min_level
                 FROM {$table}
@@ -410,6 +418,9 @@ class JESP_ERP_Stock
                 HAVING total_qty <= min_level AND min_level > 0
             ) sub" // phpcs:ignore
         );
+
+        set_transient( 'jesp_erp_low_stock_count', $count, 5 * MINUTE_IN_SECONDS );
+        return $count;
     }
 
     /**

@@ -179,6 +179,12 @@ class JESP_ERP_Import {
             return;
         }
 
+        // Block SSRF: only allow http/https schemes.
+        $parsed = wp_parse_url( $image_url );
+        if ( ! isset( $parsed['scheme'] ) || ! in_array( strtolower( $parsed['scheme'] ), array( 'http', 'https' ), true ) ) {
+            return;
+        }
+
         require_once ABSPATH . 'wp-admin/includes/media.php';
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/image.php';
