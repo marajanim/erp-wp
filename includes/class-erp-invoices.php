@@ -283,8 +283,8 @@ h1,h2,h3,h4,p{margin:0;padding:0;}
 .print-bar button{padding:9px 22px;font-size:13px;border:none;border-radius:6px;cursor:pointer;margin:0 5px;font-family:inherit;}
 .btn-p{background:#2c3e50;color:#fff;}
 .btn-c{background:#e0e0e0;color:#333;}
-@page{size:A4 portrait;margin:15mm;}
-@media print{.print-bar{display:none;}body{background:#fff;padding:0;margin:0;}html{background:#fff;}.invoice-box{max-width:100%;margin:0;padding:0;border:none;box-shadow:none;}}
+@page{size:A4 portrait;margin:12mm;}
+@media print{.print-bar{display:none;}body{background:#fff;padding:0;margin:0;}html{background:#fff;}.invoice-box{max-width:100%;margin:0;padding:20px 24px;border:none;box-shadow:none;}}
 </style>
 </head>
 <body>
