@@ -66,6 +66,11 @@ class JESP_ERP_Ajax
             'erp_save_invoice',
             'erp_delete_invoice',
             'erp_print_invoice',
+            // v11: Finance
+            'erp_get_finance_summary',
+            'erp_get_expenses',
+            'erp_save_expense',
+            'erp_delete_expense',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -1266,5 +1271,72 @@ class JESP_ERP_Ajax
             'total_revenue' => round($total_revenue, 2),
             'brand_tax'     => $brand_tax ?: 'none',
         ));
+    }
+    /* ------------------------------------------------------------------ */
+    /*  v11: Finance                                                       */
+    /* ------------------------------------------------------------------ */
+    public function erp_get_finance_summary()
+    {
+        $this->verify();
+
+        $date_from = sanitize_text_field($_POST['date_from'] ?? gmdate('Y-m-d', strtotime('-30 days')));
+        $date_to   = sanitize_text_field($_POST['date_to']   ?? gmdate('Y-m-d'));
+
+        $summary         = JESP_ERP_Finance::get_finance_summary($date_from, $date_to);
+        $payment_methods = JESP_ERP_Finance::get_payment_methods($date_from, $date_to);
+        $daily_revenue   = JESP_ERP_Finance::get_daily_revenue($date_from, $date_to);
+
+        wp_send_json_success(array(
+            'summary'         => $summary,
+            'payment_methods' => $payment_methods,
+            'daily_revenue'   => $daily_revenue,
+        ));
+    }
+
+    public function erp_get_expenses()
+    {
+        $this->verify();
+
+        $result = JESP_ERP_Finance::get_expenses(array(
+            'date_from' => sanitize_text_field($_POST['date_from'] ?? gmdate('Y-m-d', strtotime('-30 days'))),
+            'date_to'   => sanitize_text_field($_POST['date_to']   ?? gmdate('Y-m-d')),
+            'category'  => sanitize_text_field($_POST['category']  ?? ''),
+            'per_page'  => absint($_POST['per_page'] ?? 20),
+            'page'      => absint($_POST['page']     ?? 1),
+        ));
+
+        wp_send_json_success($result);
+    }
+
+    public function erp_save_expense()
+    {
+        $this->verify();
+
+        $result = JESP_ERP_Finance::save_expense(array(
+            'id'           => absint($_POST['id'] ?? 0),
+            'title'        => sanitize_text_field($_POST['title'] ?? ''),
+            'amount'       => floatval($_POST['amount'] ?? 0),
+            'category'     => sanitize_text_field($_POST['category'] ?? ''),
+            'expense_date' => sanitize_text_field($_POST['expense_date'] ?? gmdate('Y-m-d')),
+            'notes'        => sanitize_textarea_field($_POST['notes'] ?? ''),
+        ));
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()));
+        }
+        wp_send_json_success($result);
+    }
+
+    public function erp_delete_expense()
+    {
+        $this->verify();
+
+        $id = absint($_POST['id'] ?? 0);
+        if (!$id) {
+            wp_send_json_error(array('message' => __('Invalid expense ID.', 'jesp-erp')));
+        }
+
+        $result = JESP_ERP_Finance::delete_expense($id);
+        wp_send_json_success($result);
     }
 }

@@ -16,14 +16,14 @@
  * WC tested up to: 8.6
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit;
 }
 
-define( 'JESP_ERP_VERSION', '1.0.0' );
-define( 'JESP_ERP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'JESP_ERP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'JESP_ERP_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+define('JESP_ERP_VERSION', '1.0.0');
+define('JESP_ERP_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('JESP_ERP_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('JESP_ERP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-activator.php';
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-deactivator.php';
@@ -38,25 +38,27 @@ require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-orders.php';
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-customers.php';
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-woocommerce.php';
 require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-invoices.php';
+require_once JESP_ERP_PLUGIN_DIR . 'includes/class-erp-finance.php';
 
-register_activation_hook( __FILE__, array( 'JESP_ERP_Activator', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'JESP_ERP_Deactivator', 'deactivate' ) );
+register_activation_hook(__FILE__, array('JESP_ERP_Activator', 'activate'));
+register_deactivation_hook(__FILE__, array('JESP_ERP_Deactivator', 'deactivate'));
 
-add_action( 'before_woocommerce_init', function () {
-    if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
-        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+add_action('before_woocommerce_init', function () {
+    if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
     }
-} );
+});
 
-add_action( 'plugins_loaded', 'jesp_erp_init' );
+add_action('plugins_loaded', 'jesp_erp_init');
 
-function jesp_erp_init() {
-    if ( ! class_exists( 'WooCommerce' ) ) {
-        add_action( 'admin_notices', function () {
+function jesp_erp_init()
+{
+    if (!class_exists('WooCommerce')) {
+        add_action('admin_notices', function () {
             echo '<div class="notice notice-error"><p>';
-            esc_html_e( 'ERP Inventory & Customer Manager requires WooCommerce to be installed and active.', 'jesp-erp' );
+            esc_html_e('ERP Inventory & Customer Manager requires WooCommerce to be installed and active.', 'jesp-erp');
             echo '</p></div>';
-        } );
+        });
         return;
     }
     JESP_ERP_Admin::get_instance();

@@ -140,6 +140,7 @@
         if (page === 'jesp-erp-hero') initHeroProductsPage();
         if (page === 'jesp-erp-settings') initSettings();
         if (page === 'jesp-erp-invoices') initInvoiceMaker();
+        if (page === 'jesp-erp-finance') initFinancePage();
     });
 
     /* ====================================================================
@@ -2241,6 +2242,310 @@
             const url = ERP.ajaxUrl + '?action=erp_print_invoice&nonce=' + ERP.nonce + '&id=' + id;
             window.open(url, '_blank');
         }
+    }
+
+    /* ====================================================================
+       FINANCE PAGE
+       ==================================================================== */
+    let finState = { dateFrom: '', dateTo: '' };
+    let finRevenueChart = null;
+    let finPaymentChart = null;
+
+    function initFinancePage() {
+        const to = new Date().toISOString().slice(0, 10);
+        const from = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+        $('#fin-date-from').val(from);
+        $('#fin-date-to').val(to);
+        finState.dateFrom = from;
+        finState.dateTo = to;
+
+        loadFinanceSummary();
+        loadExpenses();
+
+        // Quick range buttons.
+        $(document).on('click', '.jesp-fin-range', function () {
+            const days = parseInt($(this).data('days'));
+            $('.jesp-fin-range').removeClass('active');
+            $(this).addClass('active');
+
+            if (days === 0) {
+                $('.jesp-fin-custom-range').show();
+                return;
+            }
+            $('.jesp-fin-custom-range').hide();
+            const t = new Date().toISOString().slice(0, 10);
+            const f = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+            $('#fin-date-from').val(f);
+            $('#fin-date-to').val(t);
+            finState.dateFrom = f;
+            finState.dateTo = t;
+            loadFinanceSummary();
+            loadExpenses();
+        });
+
+        // Custom date apply.
+        $('#fin-apply-custom').on('click', function () {
+            finState.dateFrom = $('#fin-date-from').val();
+            finState.dateTo = $('#fin-date-to').val();
+            loadFinanceSummary();
+            loadExpenses();
+        });
+
+        // Add Expense button.
+        $('#fin-add-expense').on('click', function () {
+            $('#fin-expense-id').val(0);
+            $('#fin-expense-title').val('');
+            $('#fin-expense-amount').val('');
+            $('#fin-expense-date').val(new Date().toISOString().slice(0, 10));
+            $('#fin-expense-category').val('');
+            $('#fin-expense-notes').val('');
+            $('#fin-expense-modal-title').text('Add Expense');
+            $('#fin-expense-modal').show();
+        });
+
+        // Modal close.
+        $(document).on('click', '#fin-expense-modal .jesp-modal-close, #fin-expense-modal .jesp-modal-overlay', function () {
+            $('#fin-expense-modal').hide();
+        });
+
+        // Save expense.
+        $('#fin-save-expense').on('click', function () {
+            const $btn = $(this).prop('disabled', true).text('Saving...');
+            ERP.ajax('erp_save_expense', {
+                id: $('#fin-expense-id').val(),
+                title: $('#fin-expense-title').val(),
+                amount: $('#fin-expense-amount').val(),
+                category: $('#fin-expense-category').val(),
+                expense_date: $('#fin-expense-date').val(),
+                notes: $('#fin-expense-notes').val(),
+            }).done(function (res) {
+                if (res.success) {
+                    ERP.toast(res.data.message);
+                    $('#fin-expense-modal').hide();
+                    loadExpenses();
+                    loadFinanceSummary();
+                } else {
+                    ERP.toast(res.data?.message || 'Error', 'error');
+                }
+            }).fail(function () {
+                ERP.toast('Network error.', 'error');
+            }).always(function () {
+                $btn.prop('disabled', false).text('Save Expense');
+            });
+        });
+
+        // Delete expense.
+        $(document).on('click', '.fin-delete-expense', function () {
+            if (!confirm('Are you sure you want to delete this expense?')) return;
+            const id = $(this).data('id');
+            ERP.ajax('erp_delete_expense', { id: id }).done(function (res) {
+                if (res.success) {
+                    ERP.toast(res.data.message);
+                    loadExpenses();
+                    loadFinanceSummary();
+                } else {
+                    ERP.toast(res.data?.message || 'Error', 'error');
+                }
+            });
+        });
+
+        // Edit expense.
+        $(document).on('click', '.fin-edit-expense', function () {
+            const $row = $(this).closest('tr');
+            $('#fin-expense-id').val($row.data('id'));
+            $('#fin-expense-title').val($row.data('title'));
+            $('#fin-expense-amount').val($row.data('amount'));
+            $('#fin-expense-date').val($row.data('date'));
+            $('#fin-expense-category').val($row.data('category'));
+            $('#fin-expense-notes').val($row.data('notes'));
+            $('#fin-expense-modal-title').text('Edit Expense');
+            $('#fin-expense-modal').show();
+        });
+    }
+
+    function loadFinanceSummary() {
+        ERP.ajax('erp_get_finance_summary', {
+            date_from: finState.dateFrom,
+            date_to: finState.dateTo,
+        }).done(function (res) {
+            if (!res.success) return;
+            const s = res.data.summary;
+            const pm = res.data.payment_methods;
+            const daily = res.data.daily_revenue;
+
+            // Update summary cards.
+            $('#fin-total-revenue').text(ERP.formatMoney(s.total_revenue));
+            $('#fin-total-refunds').text(ERP.formatMoney(s.total_refunds));
+            $('#fin-net-profit').text(ERP.formatMoney(s.net_profit));
+            $('#fin-total-tax').text(ERP.formatMoney(s.total_tax));
+            $('#fin-total-shipping').text(ERP.formatMoney(s.total_shipping));
+            $('#fin-order-count').text(s.order_count);
+            $('#fin-total-expenses').text(ERP.formatMoney(s.total_expenses));
+            $('#fin-total-discount').text(ERP.formatMoney(s.total_discount));
+
+            // Net profit color.
+            $('#fin-net-profit').css('color', s.net_profit >= 0 ? '#16a34a' : '#dc2626');
+
+            // Revenue chart.
+            const ctx = document.getElementById('fin-revenue-chart');
+            if (ctx) {
+                if (finRevenueChart) finRevenueChart.destroy();
+                finRevenueChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: daily.map(d => d.day),
+                        datasets: [{
+                            label: 'Revenue',
+                            data: daily.map(d => d.revenue),
+                            borderColor: '#16a34a',
+                            backgroundColor: 'rgba(22,163,106,.08)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#16a34a',
+                        }, {
+                            label: 'Refunds',
+                            data: daily.map(d => d.refunds),
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220,38,38,.06)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            pointBackgroundColor: '#dc2626',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: { legend: { position: 'bottom' } },
+                        scales: {
+                            y: { beginAtZero: true },
+                        }
+                    }
+                });
+            }
+
+            // Payment methods chart.
+            const pmCtx = document.getElementById('fin-payment-chart');
+            if (pmCtx && pm.length) {
+                if (finPaymentChart) finPaymentChart.destroy();
+                const pmColors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316', '#ec4899'];
+                finPaymentChart = new Chart(pmCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: pm.map(m => m.label),
+                        datasets: [{
+                            data: pm.map(m => m.total),
+                            backgroundColor: pmColors.slice(0, pm.length).map(c => c + 'CC'),
+                            borderColor: pmColors.slice(0, pm.length),
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { padding: 12, font: { size: 12 } } },
+                        }
+                    }
+                });
+            }
+
+            // Payment methods table.
+            const grandTotal = pm.reduce((sum, m) => sum + m.total, 0);
+            const $pmBody = $('#fin-payment-body');
+            if (!pm.length) {
+                $pmBody.html('<tr><td colspan="4" class="jesp-loading">No payment data.</td></tr>');
+            } else {
+                let pmHtml = '';
+                pm.forEach(m => {
+                    const pct = grandTotal > 0 ? ((m.total / grandTotal) * 100).toFixed(1) : 0;
+                    pmHtml += `<tr>
+                        <td><strong>${ERP.esc(m.label)}</strong></td>
+                        <td style="text-align:center;">${m.order_count}</td>
+                        <td>${ERP.formatMoney(m.total)}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <div style="background:#e2e8f0;border-radius:4px;height:6px;flex:1;overflow:hidden;">
+                                    <div style="width:${pct}%;height:100%;background:#6366f1;border-radius:4px;"></div>
+                                </div>
+                                <span style="font-size:12px;color:#64748b;min-width:40px;">${pct}%</span>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                $pmBody.html(pmHtml);
+            }
+        });
+    }
+
+    function loadExpenses(page) {
+        page = page || 1;
+        const $body = $('#fin-expenses-body');
+        $body.html('<tr><td colspan="6" class="jesp-loading">Loading...</td></tr>');
+
+        ERP.ajax('erp_get_expenses', {
+            date_from: finState.dateFrom,
+            date_to: finState.dateTo,
+            per_page: 20,
+            page: page,
+        }).done(function (res) {
+            if (!res.success) return;
+
+            const items = res.data.items || [];
+            const catTotals = res.data.cat_totals || [];
+
+            if (!items.length) {
+                $body.html('<tr><td colspan="6" class="jesp-loading">No expenses found. Click "Add Expense" to get started.</td></tr>');
+            } else {
+                let html = '';
+                items.forEach(function (item) {
+                    const catBadge = item.category
+                        ? `<span class="jesp-badge jesp-badge-blue">${ERP.esc(item.category)}</span>`
+                        : '<span style="color:#94a3b8;">—</span>';
+                    html += `<tr data-id="${item.id}" data-title="${ERP.esc(item.title)}" data-amount="${item.amount}" data-date="${item.expense_date}" data-category="${ERP.esc(item.category)}" data-notes="${ERP.esc(item.notes || '')}">
+                        <td>${ERP.formatDate(item.expense_date)}</td>
+                        <td><strong>${ERP.esc(item.title)}</strong></td>
+                        <td>${catBadge}</td>
+                        <td><strong style="color:#dc2626;">${ERP.formatMoney(item.amount)}</strong></td>
+                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ERP.esc(item.notes || '—')}</td>
+                        <td>
+                            <button class="jesp-action-btn-sm fin-edit-expense" title="Edit"><span class="dashicons dashicons-edit"></span></button>
+                            <button class="jesp-action-btn-sm fin-delete-expense" data-id="${item.id}" title="Delete" style="color:#dc2626;"><span class="dashicons dashicons-trash"></span></button>
+                        </td>
+                    </tr>`;
+                });
+                $body.html(html);
+            }
+
+            ERP.buildPagination('#fin-expenses-pagination', page, res.data.pages, loadExpenses);
+
+            // Expense categories summary.
+            const $cats = $('#fin-expense-cats');
+            if (!catTotals.length) {
+                $cats.html('<p style="color:#94a3b8;padding:8px 0;">No expense categories for this period.</p>');
+            } else {
+                const maxCat = Math.max(...catTotals.map(c => parseFloat(c.total)));
+                let catHtml = '';
+                catTotals.forEach(c => {
+                    const pct = maxCat > 0 ? ((parseFloat(c.total) / maxCat) * 100).toFixed(0) : 0;
+                    const catName = c.category || 'Uncategorized';
+                    catHtml += `<div style="margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                            <span style="font-size:13px;font-weight:600;color:#374151;">${ERP.esc(catName)}</span>
+                            <span style="font-size:13px;color:#64748b;">${ERP.formatMoney(c.total)} (${c.cnt} items)</span>
+                        </div>
+                        <div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">
+                            <div style="width:${pct}%;height:100%;background:#ef4444;border-radius:4px;transition:width .4s;"></div>
+                        </div>
+                    </div>`;
+                });
+                $cats.html(catHtml);
+            }
+        });
     }
 
 })(jQuery);

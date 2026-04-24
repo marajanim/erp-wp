@@ -1,18 +1,19 @@
 <?php if (!defined('ABSPATH')) {
     exit;
 }
-$custom_css  = get_option('jesp_erp_custom_css', '');
-$hidden_tabs = (array) get_option('jesp_erp_hidden_tabs', array());
+$custom_css = get_option('jesp_erp_custom_css', '');
+$hidden_tabs = (array)get_option('jesp_erp_hidden_tabs', array());
 
 $manageable_tabs = array(
-    'jesp-erp-stock'     => array('label' => __('Stock Management', 'jesp-erp'),   'icon' => 'dashicons-archive'),
-    'jesp-erp-import'    => array('label' => __('Import Products', 'jesp-erp'),    'icon' => 'dashicons-upload'),
-    'jesp-erp-export'    => array('label' => __('Export Products', 'jesp-erp'),    'icon' => 'dashicons-download'),
-    'jesp-erp-discounts' => array('label' => __('Bulk Discounts', 'jesp-erp'),     'icon' => 'dashicons-tag'),
-    'jesp-erp-orders'    => array('label' => __('Orders & Analytics', 'jesp-erp'), 'icon' => 'dashicons-chart-bar'),
-    'jesp-erp-customers' => array('label' => __('Customers', 'jesp-erp'),          'icon' => 'dashicons-groups'),
-    'jesp-erp-hero'      => array('label' => __('Hero Products', 'jesp-erp'),      'icon' => 'dashicons-star-filled'),
-    'jesp-erp-invoices'  => array('label' => __('Invoice Maker', 'jesp-erp'),      'icon' => 'dashicons-media-spreadsheet'),
+    'jesp-erp-stock' => array('label' => __('Stock Management', 'jesp-erp'), 'icon' => 'dashicons-archive'),
+    'jesp-erp-import' => array('label' => __('Import Products', 'jesp-erp'), 'icon' => 'dashicons-upload'),
+    'jesp-erp-export' => array('label' => __('Export Products', 'jesp-erp'), 'icon' => 'dashicons-download'),
+    'jesp-erp-discounts' => array('label' => __('Bulk Discounts', 'jesp-erp'), 'icon' => 'dashicons-tag'),
+    'jesp-erp-orders' => array('label' => __('Orders & Analytics', 'jesp-erp'), 'icon' => 'dashicons-chart-bar'),
+    'jesp-erp-customers' => array('label' => __('Customers', 'jesp-erp'), 'icon' => 'dashicons-groups'),
+    'jesp-erp-hero' => array('label' => __('Hero Products', 'jesp-erp'), 'icon' => 'dashicons-star-filled'),
+    'jesp-erp-invoices' => array('label' => __('Invoice Maker', 'jesp-erp'), 'icon' => 'dashicons-media-spreadsheet'),
+    'jesp-erp-finance' => array('label' => __('Finance', 'jesp-erp'), 'icon' => 'dashicons-chart-area'),
 );
 ?>
 <style>
@@ -43,7 +44,7 @@ $manageable_tabs = array(
             <?php esc_html_e('Toggle which menu tabs appear in the sidebar. Dashboard and Settings are always visible. Changes take effect after saving (page will reload).', 'jesp-erp'); ?>
         </p>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0 24px;">
-            <?php foreach ($manageable_tabs as $slug => $tab) : ?>
+            <?php foreach ($manageable_tabs as $slug => $tab): ?>
             <div class="jesp-tab-toggle-row">
                 <span class="jesp-tab-toggle-label">
                     <span class="dashicons <?php echo esc_attr($tab['icon']); ?>"></span>
@@ -54,7 +55,8 @@ $manageable_tabs = array(
                     <span class="jesp-toggle-slider"></span>
                 </label>
             </div>
-            <?php endforeach; ?>
+            <?php
+endforeach; ?>
         </div>
     </div>
 
@@ -93,31 +95,32 @@ $manageable_tabs = array(
                 <h3 style="margin-top:0;"><span class="dashicons dashicons-info" style="color:#6366f1;"></span> <?php esc_html_e('Common Selectors', 'jesp-erp'); ?></h3>
                 <div class="jesp-settings-ref">
                     <?php
-                    $refs = array(
-                        '.jesp-erp-wrap'         => 'Page wrapper',
-                        '.jesp-erp-header h1'    => 'Page title',
-                        '.jesp-erp-card'         => 'Card / panel',
-                        '.jesp-stat-card'        => 'Summary stat card',
-                        '.jesp-stat-value'       => 'Stat number',
-                        '.jesp-table'            => 'Data table',
-                        '.jesp-table th'         => 'Table header',
-                        '.jesp-badge'            => 'Status badge',
-                        '.jesp-tab-btn'          => 'Tab button',
-                        '.jesp-tab-btn.active'   => 'Active tab',
-                        '.jesp-pagination'       => 'Pagination bar',
-                        '.jesp-hero-item'        => 'Hero product row',
-                        '.jesp-stat-blue'        => 'Blue stat card',
-                        '.jesp-stat-green'       => 'Green stat card',
-                        '.jesp-stat-red'         => 'Red stat card',
-                        '.jesp-stat-purple'      => 'Purple stat card',
-                    );
-                    foreach ($refs as $selector => $label) :
-                    ?>
+$refs = array(
+    '.jesp-erp-wrap' => 'Page wrapper',
+    '.jesp-erp-header h1' => 'Page title',
+    '.jesp-erp-card' => 'Card / panel',
+    '.jesp-stat-card' => 'Summary stat card',
+    '.jesp-stat-value' => 'Stat number',
+    '.jesp-table' => 'Data table',
+    '.jesp-table th' => 'Table header',
+    '.jesp-badge' => 'Status badge',
+    '.jesp-tab-btn' => 'Tab button',
+    '.jesp-tab-btn.active' => 'Active tab',
+    '.jesp-pagination' => 'Pagination bar',
+    '.jesp-hero-item' => 'Hero product row',
+    '.jesp-stat-blue' => 'Blue stat card',
+    '.jesp-stat-green' => 'Green stat card',
+    '.jesp-stat-red' => 'Red stat card',
+    '.jesp-stat-purple' => 'Purple stat card',
+);
+foreach ($refs as $selector => $label):
+?>
                     <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:12px;">
                         <code style="background:#f8fafc;padding:2px 6px;border-radius:3px;color:#6366f1;font-size:11px;"><?php echo esc_html($selector); ?></code>
                         <span style="color:#64748b;"><?php echo esc_html($label); ?></span>
                     </div>
-                    <?php endforeach; ?>
+                    <?php
+endforeach; ?>
                 </div>
             </div>
 

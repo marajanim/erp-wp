@@ -25,6 +25,7 @@ class JESP_ERP_Admin
         add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
         add_action('wp_dashboard_setup', array($this, 'register_dashboard_widget'));
         add_action('admin_init', array($this, 'maybe_create_invoice_tables'));
+        add_action('admin_init', array($this, 'maybe_create_finance_tables'));
     }
 
     public function maybe_create_invoice_tables()
@@ -35,6 +36,14 @@ class JESP_ERP_Admin
         }
     }
 
+
+    public function maybe_create_finance_tables()
+    {
+        if (get_option('jesp_erp_finance_db') !== '1.0') {
+            JESP_ERP_Finance::create_tables();
+            update_option('jesp_erp_finance_db', '1.0');
+        }
+    }
     /**
      * Register admin menu and submenus.
      */
@@ -61,6 +70,7 @@ class JESP_ERP_Admin
         if (!in_array('jesp-erp-customers', $hidden, true)) add_submenu_page('jesp-erp', __('Customers', 'jesp-erp'), __('Customers', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-customers', array($this, 'render_customers'));
         if (!in_array('jesp-erp-hero', $hidden, true))      add_submenu_page('jesp-erp', __('Hero Products', 'jesp-erp'), __('Hero Products', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-hero', array($this, 'render_hero_products'));
         if (!in_array('jesp-erp-invoices', $hidden, true))  add_submenu_page('jesp-erp', __('Invoice Maker', 'jesp-erp'), __('Invoice Maker', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-invoices', array($this, 'render_invoice_maker'));
+        if (!in_array('jesp-erp-finance', $hidden, true))   add_submenu_page('jesp-erp', __('Finance', 'jesp-erp'), __('Finance', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-finance', array($this, 'render_finance'));
         add_submenu_page('jesp-erp', __('Settings', 'jesp-erp'), __('Settings', 'jesp-erp'), 'manage_woocommerce', 'jesp-erp-settings', array($this, 'render_settings'));
     }
 
@@ -185,6 +195,7 @@ class JESP_ERP_Admin
             'erp-manager_page_jesp-erp-customers',
             'erp-manager_page_jesp-erp-hero',
             'erp-manager_page_jesp-erp-invoices',
+            'erp-manager_page_jesp-erp-finance',
             'erp-manager_page_jesp-erp-settings',
         );
 
@@ -297,4 +308,7 @@ class JESP_ERP_Admin
     {
         include JESP_ERP_PLUGIN_DIR . 'admin/views/settings.php';
     }
+    public function render_finance()
+    {
+        include JESP_ERP_PLUGIN_DIR . 'admin/views/finance.php';
 }
