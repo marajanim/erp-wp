@@ -588,17 +588,17 @@
         if (page !== undefined) heroPageState.page = page;
 
         const $body = $('#hp-table-body');
-        $body.html('<tr><td colspan="7" class="jesp-loading">' + (ERP.strings.loading || 'Loading...') + '</td></tr>');
+        $body.html('<tr><td colspan="8" class="jesp-loading">' + (ERP.strings.loading || 'Loading...') + '</td></tr>');
 
         ERP.ajax('erp_get_hero_products_list', {
             date_from: heroPageState.dateFrom,
-            date_to:   heroPageState.dateTo,
-            search:    heroPageState.search,
-            per_page:  heroPageState.perPage,
-            page:      heroPageState.page,
+            date_to: heroPageState.dateTo,
+            search: heroPageState.search,
+            per_page: heroPageState.perPage,
+            page: heroPageState.page,
         }).done(function (res) {
             if (!res.success || !res.data.items.length) {
-                $body.html('<tr><td colspan="7" class="jesp-loading">No products found for this period.</td></tr>');
+                $body.html('<tr><td colspan="8" class="jesp-loading">No products found for this period.</td></tr>');
                 $('#hp-summary-products').text('0');
                 $('#hp-summary-revenue').text(ERP.formatMoney(0));
                 $('#hp-summary-top').text('—');
@@ -617,7 +617,7 @@
             $('#hp-summary-revenue').text(ERP.formatMoney(pageRevTotal));
             $('#hp-summary-top').text(
                 startRank === 1 && items[0]
-                    ? (items[0].product_name || 'Product #' + items[0].product_id).substring(0, 22)
+                    ? (items[0].sku || items[0].product_name || 'Product #' + items[0].product_id).substring(0, 22)
                     : '—'
             );
 
@@ -625,10 +625,10 @@
             items.forEach(function (item, idx) {
                 const rank = startRank + idx;
                 let medal;
-                if (rank === 1)      medal = '<span style="font-size:22px;">🥇</span>';
+                if (rank === 1) medal = '<span style="font-size:22px;">🥇</span>';
                 else if (rank === 2) medal = '<span style="font-size:22px;">🥈</span>';
                 else if (rank === 3) medal = '<span style="font-size:22px;">🥉</span>';
-                else                 medal = '<span style="font-weight:700;color:#64748b;">#' + rank + '</span>';
+                else medal = '<span style="font-weight:700;color:#64748b;">#' + rank + '</span>';
 
                 const thumb = item.thumbnail_url
                     ? '<img src="' + item.thumbnail_url + '" width="44" height="44" style="object-fit:cover;border-radius:6px;vertical-align:middle;">'
@@ -643,15 +643,16 @@
                     '<td style="text-align:center;">' + medal + '</td>' +
                     '<td>' + thumb + '</td>' +
                     '<td><strong>' + ERP.esc(item.product_name || 'Product #' + item.product_id) + '</strong></td>' +
+                    '<td>' + ERP.esc(item.sku || '—') + '</td>' +
                     '<td style="text-align:center;">' + item.order_count + '</td>' +
                     '<td style="text-align:center;">' + item.total_qty_sold + '</td>' +
                     '<td><strong>' + ERP.formatMoney(item.total_revenue) + '</strong></td>' +
                     '<td style="min-width:120px;">' +
-                        '<div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">' +
-                            '<div style="width:' + barPct + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width .4s;"></div>' +
-                        '</div>' +
+                    '<div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">' +
+                    '<div style="width:' + barPct + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width .4s;"></div>' +
+                    '</div>' +
                     '</td>' +
-                '</tr>';
+                    '</tr>';
             });
             $body.html(html);
 
@@ -797,7 +798,7 @@
 
         // ---- Image lightbox ---- //
         $(document).on('click', '.jesp-thumb-zoomable', function () {
-            const src  = $(this).data('full');
+            const src = $(this).data('full');
             const name = $(this).data('name');
             if (!src) return;
 
@@ -1216,10 +1217,10 @@
         // Individual field toggle.
         $(document).on('change', '.erp-export-field', function () {
             syncFieldStyle($(this));
-            const total   = $('.erp-export-field').length;
+            const total = $('.erp-export-field').length;
             const checked = $('.erp-export-field:checked').length;
             $('#erp-export-select-all').prop('indeterminate', checked > 0 && checked < total)
-                                       .prop('checked', checked === total);
+                .prop('checked', checked === total);
         });
 
         // Select All toggle.
@@ -1230,10 +1231,10 @@
 
         // Initialise Select All state.
         (function () {
-            const total   = $('.erp-export-field').length;
+            const total = $('.erp-export-field').length;
             const checked = $('.erp-export-field:checked').length;
             $('#erp-export-select-all').prop('checked', checked === total)
-                                       .prop('indeterminate', checked > 0 && checked < total);
+                .prop('indeterminate', checked > 0 && checked < total);
         })();
 
         // Form submit — collect fields and redirect via GET.
@@ -1253,11 +1254,11 @@
             $('#erp-export-fields-hidden').val(selected.join(','));
 
             const params = new URLSearchParams({
-                action:       'erp_export_csv',
-                nonce:        ERP.nonce,
-                category:     $('#erp-export-cat-hidden').val(),
+                action: 'erp_export_csv',
+                nonce: ERP.nonce,
+                category: $('#erp-export-cat-hidden').val(),
                 stock_status: $('#erp-export-status-hidden').val(),
-                fields:       selected.join(','),
+                fields: selected.join(','),
             });
             window.location.href = ERP.ajaxUrl + '?' + params.toString();
         });
@@ -1763,7 +1764,7 @@
             const maxRev = Math.max(...items.map(i => i.revenue));
             let html = '';
             items.forEach(item => {
-                const pct    = total > 0 ? ((item.revenue / total) * 100).toFixed(1) : '0.0';
+                const pct = total > 0 ? ((item.revenue / total) * 100).toFixed(1) : '0.0';
                 const barPct = maxRev > 0 ? ((item.revenue / maxRev) * 100).toFixed(1) : '0';
                 const isUnbranded = item.brand === 'Unbranded';
                 const barColor = isUnbranded ? '#94a3b8' : '#3b82f6';
@@ -2125,30 +2126,30 @@
         }
 
         function recalcRow($row) {
-            const qty   = parseFloat($row.find('.inv-qty').val())   || 0;
-            const price = parseFloat($row.find('.inv-price').val())  || 0;
+            const qty = parseFloat($row.find('.inv-qty').val()) || 0;
+            const price = parseFloat($row.find('.inv-price').val()) || 0;
             $row.find('.inv-line-total').text(ERP.formatMoney(qty * price));
         }
 
         function recalcTotals() {
             let subtotal = 0;
             $('#inv-items-body tr').each(function () {
-                const qty   = parseFloat($(this).find('.inv-qty').val())   || 0;
-                const price = parseFloat($(this).find('.inv-price').val())  || 0;
+                const qty = parseFloat($(this).find('.inv-qty').val()) || 0;
+                const price = parseFloat($(this).find('.inv-price').val()) || 0;
                 subtotal += qty * price;
             });
 
-            const discType  = $('#inv-discount-type').val();
-            const discVal   = parseFloat($('#inv-discount-value').val()) || 0;
-            const taxRate   = parseFloat($('#inv-tax-rate').val())       || 0;
+            const discType = $('#inv-discount-type').val();
+            const discVal = parseFloat($('#inv-discount-value').val()) || 0;
+            const taxRate = parseFloat($('#inv-tax-rate').val()) || 0;
 
             let discAmt = 0;
             if (discType === 'percentage') discAmt = subtotal * (discVal / 100);
             else if (discType === 'fixed') discAmt = Math.min(discVal, subtotal);
 
             const afterDisc = subtotal - discAmt;
-            const taxAmt    = afterDisc * (taxRate / 100);
-            const total     = afterDisc + taxAmt;
+            const taxAmt = afterDisc * (taxRate / 100);
+            const total = afterDisc + taxAmt;
 
             $('#inv-display-subtotal').text(ERP.formatMoney(subtotal));
             $('#inv-display-total').text(ERP.formatMoney(total));
@@ -2161,9 +2162,9 @@
                 if (!name) return;
                 items.push({
                     product_name: name,
-                    sku:          $(this).find('.inv-sku').val().trim(),
-                    qty:          parseFloat($(this).find('.inv-qty').val())  || 1,
-                    unit_price:   parseFloat($(this).find('.inv-price').val()) || 0,
+                    sku: $(this).find('.inv-sku').val().trim(),
+                    qty: parseFloat($(this).find('.inv-qty').val()) || 1,
+                    unit_price: parseFloat($(this).find('.inv-price').val()) || 0,
                 });
             });
             return items;
@@ -2179,8 +2180,8 @@
 
         function getTotal(subtotal) {
             const discType = $('#inv-discount-type').val();
-            const discVal  = parseFloat($('#inv-discount-value').val()) || 0;
-            const taxRate  = parseFloat($('#inv-tax-rate').val())       || 0;
+            const discVal = parseFloat($('#inv-discount-value').val()) || 0;
+            const taxRate = parseFloat($('#inv-tax-rate').val()) || 0;
             let discAmt = 0;
             if (discType === 'percentage') discAmt = subtotal * (discVal / 100);
             else if (discType === 'fixed') discAmt = Math.min(discVal, subtotal);
@@ -2195,26 +2196,26 @@
             const items = collectItems();
             if (!items.length) { ERP.toast('Add at least one line item.', 'error'); return; }
 
-            const sub   = getSubtotal();
+            const sub = getSubtotal();
             const total = getTotal(sub);
-            const $btn  = $('#inv-save-btn').prop('disabled', true).text('Saving…');
+            const $btn = $('#inv-save-btn').prop('disabled', true).text('Saving…');
 
             ERP.ajax('erp_save_invoice', {
-                id:               $('#inv-id').val(),
-                invoice_number:   $('#inv-number').val().trim(),
-                customer_name:    name,
-                customer_phone:   $('#inv-customer-phone').val().trim(),
-                customer_email:   $('#inv-customer-email').val().trim(),
+                id: $('#inv-id').val(),
+                invoice_number: $('#inv-number').val().trim(),
+                customer_name: name,
+                customer_phone: $('#inv-customer-phone').val().trim(),
+                customer_email: $('#inv-customer-email').val().trim(),
                 customer_address: $('#inv-customer-address').val().trim(),
-                invoice_date:     $('#inv-date').val(),
-                subtotal:         sub,
-                discount_type:    $('#inv-discount-type').val(),
-                discount_value:   $('#inv-discount-value').val(),
-                tax_rate:         $('#inv-tax-rate').val(),
-                total:            total,
-                notes:            $('#inv-notes').val().trim(),
-                status:           $('#inv-status').val(),
-                items:            JSON.stringify(items),
+                invoice_date: $('#inv-date').val(),
+                subtotal: sub,
+                discount_type: $('#inv-discount-type').val(),
+                discount_value: $('#inv-discount-value').val(),
+                tax_rate: $('#inv-tax-rate').val(),
+                total: total,
+                notes: $('#inv-notes').val().trim(),
+                status: $('#inv-status').val(),
+                items: JSON.stringify(items),
             }).done(function (res) {
                 if (res.success) {
                     ERP.toast(res.data.message || 'Saved!');

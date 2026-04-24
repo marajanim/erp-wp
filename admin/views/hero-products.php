@@ -91,6 +91,7 @@
                         <th style="width:60px;text-align:center;"><?php esc_html_e('Rank', 'jesp-erp'); ?></th>
                         <th style="width:60px;"><?php esc_html_e('Image', 'jesp-erp'); ?></th>
                         <th><?php esc_html_e('Product Name', 'jesp-erp'); ?></th>
+                        <th><?php esc_html_e('SKU', 'jesp-erp'); ?></th>
                         <th style="text-align:center;"><?php esc_html_e('Orders', 'jesp-erp'); ?></th>
                         <th style="text-align:center;"><?php esc_html_e('Qty Sold', 'jesp-erp'); ?></th>
                         <th><?php esc_html_e('Revenue', 'jesp-erp'); ?></th>
@@ -98,7 +99,7 @@
                     </tr>
                 </thead>
                 <tbody id="hp-table-body">
-                    <tr><td colspan="7" class="jesp-loading"><?php esc_html_e('Loading...', 'jesp-erp'); ?></td></tr>
+                    <tr><td colspan="8" class="jesp-loading"><?php esc_html_e('Loading...', 'jesp-erp'); ?></td></tr>
                 </tbody>
             </table>
         </div>
