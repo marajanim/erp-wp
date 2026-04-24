@@ -219,25 +219,40 @@ class JESP_ERP_Finance
         );
         $args = wp_parse_args($args, $defaults);
 
-        $where = $wpdb->prepare("expense_date >= %s AND expense_date <= %s", $args['date_from'], $args['date_to']);
+        $where_parts = array();
+        $where_args  = array();
+
+        $where_parts[] = 'expense_date >= %s';
+        $where_args[]  = $args['date_from'];
+        $where_parts[] = 'expense_date <= %s';
+        $where_args[]  = $args['date_to'];
+
         if (!empty($args['category'])) {
-            $where .= $wpdb->prepare(' AND category = %s', $args['category']);
+            $where_parts[] = 'category = %s';
+            $where_args[]  = $args['category'];
         }
+
+        $where_clause = implode(' AND ', $where_parts);
 
         $per_page = absint($args['per_page']);
         $page     = max(1, absint($args['page']));
         $offset   = ($page - 1) * $per_page;
 
+        $items_args = array_merge($where_args, array($per_page, $offset));
         $items = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$table} WHERE {$where} ORDER BY expense_date DESC LIMIT %d OFFSET %d",
-            $per_page, $offset
+            "SELECT * FROM {$table} WHERE {$where_clause} ORDER BY expense_date DESC LIMIT %d OFFSET %d",
+            $items_args
         ));
 
-        $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE {$where}");
+        $total = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} WHERE {$where_clause}",
+            $where_args
+        ));
 
-        $cat_totals = $wpdb->get_results(
-            "SELECT category, SUM(amount) as total, COUNT(*) as cnt FROM {$table} WHERE {$where} GROUP BY category ORDER BY total DESC"
-        );
+        $cat_totals = $wpdb->get_results($wpdb->prepare(
+            "SELECT category, SUM(amount) as total, COUNT(*) as cnt FROM {$table} WHERE {$where_clause} GROUP BY category ORDER BY total DESC",
+            $where_args
+        ));
 
         return array(
             'items'      => $items,

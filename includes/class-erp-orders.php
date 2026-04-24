@@ -48,8 +48,8 @@ class JESP_ERP_Orders
         }
 
         $where = array();
-        $where[] = "{$date_col} >= '" . esc_sql($args['date_from']) . " 00:00:00'";
-        $where[] = "{$date_col} <= '" . esc_sql($args['date_to']) . " 23:59:59'";
+        $where[] = $wpdb->prepare("{$date_col} >= %s", $args['date_from'] . ' 00:00:00');
+        $where[] = $wpdb->prepare("{$date_col} <= %s", $args['date_to'] . ' 23:59:59');
 
         if ($use_hpos) {
             $where[] = "{$status_col} IN ('wc-completed','wc-processing')";

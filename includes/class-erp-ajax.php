@@ -1027,7 +1027,7 @@ class JESP_ERP_Ajax
         update_option('jesp_erp_custom_css', $css);
 
         // Save tab visibility.
-        $allowed = array('jesp-erp-stock', 'jesp-erp-import', 'jesp-erp-export', 'jesp-erp-discounts', 'jesp-erp-orders', 'jesp-erp-customers', 'jesp-erp-hero', 'jesp-erp-invoices');
+        $allowed = array('jesp-erp-stock', 'jesp-erp-import', 'jesp-erp-export', 'jesp-erp-discounts', 'jesp-erp-orders', 'jesp-erp-customers', 'jesp-erp-hero', 'jesp-erp-invoices', 'jesp-erp-finance');
         $raw     = isset($_POST['hidden_tabs']) && is_array($_POST['hidden_tabs']) ? $_POST['hidden_tabs'] : array();
         $hidden  = array_values(array_intersect(array_map('sanitize_text_field', $raw), $allowed));
         update_option('jesp_erp_hidden_tabs', $hidden);
@@ -1044,7 +1044,7 @@ class JESP_ERP_Ajax
     /* ------------------------------------------------------------------ */
     public function erp_download_sample_csv()
     {
-        check_ajax_referer('jesp_erp_nonce', 'nonce');
+        $this->verify();
 
         if (ob_get_level()) {
             ob_end_clean();

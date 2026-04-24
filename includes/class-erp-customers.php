@@ -30,7 +30,7 @@ class JESP_ERP_Customers {
             );
         }
         if ( floatval( $args['min_spent'] ) > 0 ) {
-            $where .= ' AND total_spent >= ' . floatval( $args['min_spent'] );
+            $where .= $wpdb->prepare( ' AND total_spent >= %f', floatval( $args['min_spent'] ) );
         }
 
         return JESP_ERP_Database::paginate(

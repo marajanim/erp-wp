@@ -41,7 +41,7 @@ class JESP_ERP_Stock
 
         if (!empty($args['category'])) {
             $cat_id = absint($args['category']);
-            $where .= " AND tt.term_id = {$cat_id}";
+            $where .= $wpdb->prepare(' AND tt.term_id = %d', $cat_id);
         }
 
         $join_category = '';
@@ -139,7 +139,7 @@ class JESP_ERP_Stock
             $item->full_image_url = '';
             if (!empty($item->thumbnail_id)) {
                 $thumb = wp_get_attachment_image_url((int)$item->thumbnail_id, 'thumbnail');
-                $full  = wp_get_attachment_image_url((int)$item->thumbnail_id, 'large');
+                $full = wp_get_attachment_image_url((int)$item->thumbnail_id, 'large');
                 $item->thumbnail_url = $thumb ? $thumb : '';
                 $item->full_image_url = $full ? $full : ($thumb ? $thumb : '');
             }
@@ -200,7 +200,7 @@ class JESP_ERP_Stock
 
         if (!empty($args['category'])) {
             $cat_id = absint($args['category']);
-            $where .= " AND tt.term_id = {$cat_id}";
+            $where .= $wpdb->prepare(' AND tt.term_id = %d', $cat_id);
             $join_category = "
                 INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
                 INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id AND tt.taxonomy = 'product_cat'
