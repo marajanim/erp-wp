@@ -311,4 +311,5 @@ class JESP_ERP_Admin
     public function render_finance()
     {
         include JESP_ERP_PLUGIN_DIR . 'admin/views/finance.php';
+    }
 }
