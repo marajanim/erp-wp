@@ -56,13 +56,6 @@
                 <span class="jesp-stat-label"><?php esc_html_e('Total Refunds', 'jesp-erp'); ?></span>
             </div>
         </div>
-        <div class="jesp-stat-card jesp-stat-blue">
-            <div class="jesp-stat-icon"><span class="dashicons dashicons-chart-line"></span></div>
-            <div class="jesp-stat-content">
-                <span class="jesp-stat-value" id="fin-net-profit">—</span>
-                <span class="jesp-stat-label"><?php esc_html_e('Net Profit', 'jesp-erp'); ?></span>
-            </div>
-        </div>
         <div class="jesp-stat-card" style="border-left:4px solid #f59e0b;">
             <div class="jesp-stat-icon"><span class="dashicons dashicons-clipboard" style="color:#f59e0b;"></span></div>
             <div class="jesp-stat-content">
@@ -89,6 +82,13 @@
             <div class="jesp-stat-content">
                 <span class="jesp-stat-value" id="fin-order-count">—</span>
                 <span class="jesp-stat-label"><?php esc_html_e('Total Orders', 'jesp-erp'); ?></span>
+            </div>
+        </div>
+        <div class="jesp-stat-card jesp-stat-blue">
+            <div class="jesp-stat-icon"><span class="dashicons dashicons-chart-line"></span></div>
+            <div class="jesp-stat-content">
+                <span class="jesp-stat-value" id="fin-net-profit">—</span>
+                <span class="jesp-stat-label"><?php esc_html_e('Net Profit', 'jesp-erp'); ?></span>
             </div>
         </div>
     </div>
