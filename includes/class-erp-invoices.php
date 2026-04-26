@@ -133,6 +133,7 @@ class JESP_ERP_Invoices {
             'tax_rate'         => round( floatval( $data['tax_rate']       ?? 0 ), 2 ),
             'total'            => round( floatval( $data['total']          ?? 0 ), 2 ),
             'notes'            => sanitize_textarea_field( $data['notes']  ?? '' ),
+            'salesperson_name' => sanitize_text_field( $data['salesperson_name'] ?? '' ),
             'status'           => in_array( $data['status'] ?? '', array( 'draft', 'paid' ), true )
                                     ? $data['status'] : 'draft',
         );
