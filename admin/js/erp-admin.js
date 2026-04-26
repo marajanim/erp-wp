@@ -1350,6 +1350,53 @@
        ORDERS & ANALYTICS
        ==================================================================== */
     let ordersChart = null;
+    let latestOrderId = 0;
+    let orderPollTimer = null;
+
+    function showNewOrderBanner(count) {
+        $('#jesp-new-order-banner').remove();
+        const label = count === 1 ? '1 new order received' : `${count} new orders received`;
+        const $banner = $(
+            `<div id="jesp-new-order-banner">` +
+            `<span class="dashicons dashicons-bell" style="vertical-align:middle;margin-right:6px;color:#16a34a;"></span>` +
+            `<strong>${label}</strong> &mdash; <a href="#" id="jesp-refresh-orders">Refresh now</a>` +
+            `<button id="jesp-banner-dismiss" style="float:right;background:none;border:none;cursor:pointer;font-size:16px;line-height:1;">&times;</button>` +
+            `</div>`
+        );
+        $('#erp-all-orders-table').closest('.jesp-table-responsive').before($banner);
+
+        // Badge on the All Orders tab button.
+        const $tab = $('#erp-orders-tabs .jesp-tab-btn[data-tab="all-orders"]');
+        $tab.find('.jesp-order-badge').remove();
+        $tab.append(`<span class="jesp-order-badge">${count}</span>`);
+
+        // Subtle ping sound.
+        try {
+            const AudioCtx = window.AudioContext || window['webkitAudioContext'];
+            if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc.start(); osc.stop(ctx.currentTime + 0.4);
+            }
+        } catch(e) {}
+    }
+
+    function startOrderPolling() {
+        if (orderPollTimer) return;
+        orderPollTimer = setInterval(function () {
+            if (!latestOrderId) return;
+            ERP.ajax('erp_check_new_orders', { since_id: latestOrderId }).done(function (res) {
+                if (!res.success || !res.data.new_count) return;
+                latestOrderId = res.data.latest_id;
+                showNewOrderBanner(res.data.new_count);
+            });
+        }, 30000);
+    }
 
     function initOrders() {
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -1425,6 +1472,19 @@
             clearTimeout(aoSearchTimer);
             aoSearchTimer = setTimeout(() => loadAllOrders(), 400);
         });
+
+        // New order banner: refresh and dismiss.
+        $(document).on('click', '#jesp-refresh-orders', function (e) {
+            e.preventDefault();
+            $('#jesp-new-order-banner').remove();
+            $('#erp-orders-tabs .jesp-tab-btn[data-tab="all-orders"] .jesp-order-badge').remove();
+            loadAllOrders();
+        });
+        $(document).on('click', '#jesp-banner-dismiss', function () {
+            $('#jesp-new-order-banner').remove();
+        });
+
+        startOrderPolling();
 
         // Order Detail modal (delegated).
         $(document).on('click', '.jesp-order-detail-btn', function () {
@@ -1710,6 +1770,11 @@
             if (!res.success || !res.data.items.length) {
                 $body.html('<tr><td colspan="8" class="jesp-loading">' + (ERP.strings.no_results || 'No orders found.') + '</td></tr>');
                 return;
+            }
+
+            // Track the newest order ID for polling — orders are sorted DESC so first item is latest.
+            if (res.data.items.length && !latestOrderId) {
+                latestOrderId = res.data.items[0].order_id;
             }
 
             let html = '';

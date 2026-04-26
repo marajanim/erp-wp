@@ -73,6 +73,8 @@ class JESP_ERP_Ajax
             'erp_delete_expense',
             // v12: Invoice company settings
             'erp_save_invoice_company',
+            // v13: New order polling notification
+            'erp_check_new_orders',
         );
         foreach ($actions as $action) {
             add_action("wp_ajax_{$action}", array($this, $action));
@@ -749,6 +751,49 @@ class JESP_ERP_Ajax
             'items' => $items,
             'total' => $results->total,
             'pages' => $results->max_num_pages,
+        ));
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  v13: New order polling notification                               */
+    /* ------------------------------------------------------------------ */
+    public function erp_check_new_orders()
+    {
+        $this->verify();
+        $since_id = absint($_POST['since_id'] ?? 0);
+
+        $orders = wc_get_orders(array(
+            'limit'   => 10,
+            'orderby' => 'date',
+            'order'   => 'DESC',
+            'status'  => array('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending'),
+        ));
+
+        if (empty($orders)) {
+            wp_send_json_success(array('new_count' => 0, 'latest_id' => $since_id));
+        }
+
+        $latest_id  = (int) $orders[0]->get_id();
+        $new_orders = array();
+
+        if ($since_id > 0) {
+            foreach ($orders as $order) {
+                if ((int) $order->get_id() > $since_id) {
+                    $new_orders[] = array(
+                        'order_id'     => $order->get_id(),
+                        'order_number' => $order->get_order_number(),
+                        'customer'     => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
+                        'total'        => $order->get_total(),
+                        'status'       => wc_get_order_status_name($order->get_status()),
+                    );
+                }
+            }
+        }
+
+        wp_send_json_success(array(
+            'new_count'  => count($new_orders),
+            'latest_id'  => $latest_id,
+            'new_orders' => $new_orders,
         ));
     }
 
