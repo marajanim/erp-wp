@@ -77,6 +77,13 @@
                 <span class="jesp-stat-label"><?php esc_html_e('Shipping Collected', 'jesp-erp'); ?></span>
             </div>
         </div>
+        <div class="jesp-stat-card" style="border-left:4px solid #ef4444;">
+            <div class="jesp-stat-icon"><span class="dashicons dashicons-tag" style="color:#ef4444;"></span></div>
+            <div class="jesp-stat-content">
+                <span class="jesp-stat-value" id="fin-total-expenses">—</span>
+                <span class="jesp-stat-label"><?php esc_html_e('Total Expenses', 'jesp-erp'); ?></span>
+            </div>
+        </div>
         <div class="jesp-stat-card" style="border-left:4px solid #64748b;">
             <div class="jesp-stat-icon"><span class="dashicons dashicons-cart" style="color:#64748b;"></span></div>
             <div class="jesp-stat-content">
