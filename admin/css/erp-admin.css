@@ -1483,6 +1483,36 @@ tr:hover .jesp-inline-edit-btn {
     color: #fff !important;
 }
 
+/* ---- Live polling indicator ---- */
+#jesp-live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #16a34a;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-left: 8px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+.jesp-live-dot {
+    width: 6px;
+    height: 6px;
+    background: #16a34a;
+    border-radius: 50%;
+    display: inline-block;
+    animation: jesp-pulse 1.4s ease-in-out infinite;
+}
+@keyframes jesp-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .4; transform: scale(.75); }
+}
+
 /* ---- New order notification banner ---- */
 #jesp-new-order-banner {
     display: flex;

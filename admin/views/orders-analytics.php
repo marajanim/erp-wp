@@ -36,6 +36,7 @@
         <div class="jesp-tab-nav">
             <button class="jesp-tab-btn active" data-tab="all-orders">
                 <span class="dashicons dashicons-list-view"></span> <?php esc_html_e('All Orders', 'jesp-erp'); ?>
+                <span id="jesp-live-indicator" title="Watching for new orders"><span class="jesp-live-dot"></span> Live</span>
             </button>
             <button class="jesp-tab-btn" data-tab="product-performance">
                 <span class="dashicons dashicons-chart-area"></span> <?php esc_html_e('Product Performance', 'jesp-erp'); ?>

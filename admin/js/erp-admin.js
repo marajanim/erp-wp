@@ -1388,12 +1388,22 @@
 
     function startOrderPolling() {
         if (orderPollTimer) return;
+
+        // Immediately fetch the true latest order ID from the server (no date filter),
+        // so polling works even when the date-filtered view shows no orders.
+        ERP.ajax('erp_check_new_orders', { since_id: 0 }).done(function (res) {
+            if (res.success && res.data.latest_id) {
+                latestOrderId = res.data.latest_id;
+            }
+        });
+
         orderPollTimer = setInterval(function () {
             if (!latestOrderId) return;
             ERP.ajax('erp_check_new_orders', { since_id: latestOrderId }).done(function (res) {
-                if (!res.success || !res.data.new_count) return;
-                latestOrderId = res.data.latest_id;
-                showNewOrderBanner(res.data.new_count);
+                if (!res.success) return;
+                // Always update to keep in sync.
+                if (res.data.latest_id) latestOrderId = res.data.latest_id;
+                if (res.data.new_count) showNewOrderBanner(res.data.new_count);
             });
         }, 30000);
     }
@@ -1772,10 +1782,6 @@
                 return;
             }
 
-            // Track the newest order ID for polling — orders are sorted DESC so first item is latest.
-            if (res.data.items.length && !latestOrderId) {
-                latestOrderId = res.data.items[0].order_id;
-            }
 
             let html = '';
             res.data.items.forEach(o => {
