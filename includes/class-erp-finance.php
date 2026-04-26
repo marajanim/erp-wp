@@ -46,29 +46,43 @@ class JESP_ERP_Finance
 
         if ($use_hpos) {
             $orders_table = $wpdb->prefix . 'wc_orders';
-            $ood_table    = $wpdb->prefix . 'wc_order_operational_data';
 
-            // Single-row aggregate — shipping_total/discount_total live in wc_order_operational_data.
+            // Revenue, tax, and order count — same pattern as the working get_daily_revenue() query.
             $stats = $wpdb->get_row($wpdb->prepare(
-                "SELECT COUNT(o.id) as order_count,
-                        COALESCE(SUM(o.total_amount), 0)       as total_revenue,
-                        COALESCE(SUM(o.tax_amount), 0)         as total_tax,
-                        COALESCE(SUM(ood.shipping_total), 0)   as total_shipping,
-                        COALESCE(SUM(ood.discount_total), 0)   as total_discount
-                 FROM {$orders_table} o
-                 LEFT JOIN {$ood_table} ood ON o.id = ood.order_id
-                 WHERE o.type = 'shop_order'
-                 AND o.status IN ('wc-completed','wc-processing')
-                 AND o.date_created_gmt >= %s AND o.date_created_gmt <= %s",
+                "SELECT COUNT(*) as order_count,
+                        COALESCE(SUM(total_amount), 0) as total_revenue,
+                        COALESCE(SUM(tax_amount), 0)   as total_tax
+                 FROM {$orders_table}
+                 WHERE type = 'shop_order'
+                 AND status IN ('wc-completed','wc-processing')
+                 AND date_created_gmt >= %s AND date_created_gmt <= %s",
                 $date_from . ' 00:00:00',
                 $date_to   . ' 23:59:59'
             ));
 
-            $total_revenue  = (float) ($stats->total_revenue  ?? 0);
-            $total_tax      = (float) ($stats->total_tax      ?? 0);
-            $total_shipping = (float) ($stats->total_shipping ?? 0);
-            $total_discount = (float) ($stats->total_discount ?? 0);
-            $order_count    = (int)   ($stats->order_count    ?? 0);
+            $total_revenue  = (float) ($stats->total_revenue ?? 0);
+            $total_tax      = (float) ($stats->total_tax     ?? 0);
+            $order_count    = (int)   ($stats->order_count   ?? 0);
+
+            // Shipping and discount from wc_order_operational_data (columns: shipping_total_amount, discount_total_amount).
+            $total_shipping = 0;
+            $total_discount = 0;
+            $ood_table = $wpdb->prefix . 'wc_order_operational_data';
+            if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $ood_table)) === $ood_table) {
+                $ood = $wpdb->get_row($wpdb->prepare(
+                    "SELECT COALESCE(SUM(ood.shipping_total_amount), 0) as total_shipping,
+                            COALESCE(SUM(ood.discount_total_amount), 0) as total_discount
+                     FROM {$orders_table} o
+                     INNER JOIN {$ood_table} ood ON o.id = ood.order_id
+                     WHERE o.type = 'shop_order'
+                     AND o.status IN ('wc-completed','wc-processing')
+                     AND o.date_created_gmt >= %s AND o.date_created_gmt <= %s",
+                    $date_from . ' 00:00:00',
+                    $date_to   . ' 23:59:59'
+                ));
+                $total_shipping = (float) ($ood->total_shipping ?? 0);
+                $total_discount = (float) ($ood->total_discount ?? 0);
+            }
 
             // Fully refunded orders.
             $total_refunds = (float) $wpdb->get_var($wpdb->prepare(
