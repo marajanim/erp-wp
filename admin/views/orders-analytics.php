@@ -33,14 +33,14 @@
 
     <!-- Tabs -->
     <div class="jesp-erp-card jesp-tabs" id="erp-orders-tabs">
-        <div class="jesp-tab-nav">
+        <div class="jesp-tab-nav" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <button class="jesp-tab-btn active" data-tab="all-orders">
                 <span class="dashicons dashicons-list-view"></span> <?php esc_html_e('All Orders', 'jesp-erp'); ?>
-                <span id="jesp-live-indicator" title="Watching for new orders"><span class="jesp-live-dot"></span> Live</span>
             </button>
             <button class="jesp-tab-btn" data-tab="product-performance">
                 <span class="dashicons dashicons-chart-area"></span> <?php esc_html_e('Product Performance', 'jesp-erp'); ?>
             </button>
+            <div id="jesp-live-indicator"><span class="jesp-live-dot"></span> <?php esc_html_e('Live', 'jesp-erp'); ?></div>
         </div>
 
         <!-- TAB: All Orders -->

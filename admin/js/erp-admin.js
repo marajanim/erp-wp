@@ -1354,58 +1354,51 @@
     let orderPollTimer = null;
 
     function showNewOrderBanner(count) {
-        $('#jesp-new-order-banner').remove();
-        const label = count === 1 ? '1 new order received' : `${count} new orders received`;
-        const $banner = $(
-            `<div id="jesp-new-order-banner">` +
-            `<span class="dashicons dashicons-bell" style="vertical-align:middle;margin-right:6px;color:#16a34a;"></span>` +
-            `<strong>${label}</strong> &mdash; <a href="#" id="jesp-refresh-orders">Refresh now</a>` +
-            `<button id="jesp-banner-dismiss" style="float:right;background:none;border:none;cursor:pointer;font-size:16px;line-height:1;">&times;</button>` +
-            `</div>`
-        );
-        $('#erp-all-orders-table').closest('.jesp-table-responsive').before($banner);
+        const label = count === 1 ? '🛒 New order received!' : `🛒 ${count} new orders received!`;
 
-        // Badge on the All Orders tab button.
+        // Toast — immediate, impossible to miss.
+        ERP.toast(label, 'success');
+
+        // Banner above the table.
+        $('#jesp-new-order-banner').remove();
+        const $banner = $(
+            '<div id="jesp-new-order-banner">' +
+            '<span class="dashicons dashicons-bell"></span> ' +
+            '<strong>' + label + '</strong> &mdash; <a href="#" id="jesp-refresh-orders">Refresh now</a>' +
+            '<button id="jesp-banner-dismiss">&times;</button>' +
+            '</div>'
+        );
+        const $table = $('#erp-all-orders-table');
+        if ($table.length) {
+            $table.closest('.jesp-table-responsive').before($banner);
+        }
+
+        // Red count badge on the tab.
         const $tab = $('#erp-orders-tabs .jesp-tab-btn[data-tab="all-orders"]');
         $tab.find('.jesp-order-badge').remove();
-        $tab.append(`<span class="jesp-order-badge">${count}</span>`);
-
-        // Subtle ping sound.
-        try {
-            const AudioCtx = window.AudioContext || window['webkitAudioContext'];
-            if (AudioCtx) {
-                const ctx = new AudioCtx();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.frequency.value = 880;
-                gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                osc.start(); osc.stop(ctx.currentTime + 0.4);
-            }
-        } catch(e) {}
+        $tab.append('<span class="jesp-order-badge">' + count + '</span>');
     }
 
     function startOrderPolling() {
         if (orderPollTimer) return;
 
-        // Immediately fetch the true latest order ID from the server (no date filter),
-        // so polling works even when the date-filtered view shows no orders.
-        ERP.ajax('erp_check_new_orders', { since_id: 0 }).done(function (res) {
-            if (res.success && res.data.latest_id) {
-                latestOrderId = res.data.latest_id;
-            }
-        });
-
-        orderPollTimer = setInterval(function () {
-            if (!latestOrderId) return;
-            ERP.ajax('erp_check_new_orders', { since_id: latestOrderId }).done(function (res) {
-                if (!res.success) return;
-                // Always update to keep in sync.
+        function poll(sinceId) {
+            $.post(ERP.ajaxUrl, {
+                action: 'erp_check_new_orders',
+                nonce: ERP.nonce,
+                since_id: sinceId
+            }, function (res) {
+                if (!res || !res.success) return;
                 if (res.data.latest_id) latestOrderId = res.data.latest_id;
-                if (res.data.new_count) showNewOrderBanner(res.data.new_count);
-            });
-        }, 30000);
+                if (res.data.new_count > 0) showNewOrderBanner(res.data.new_count);
+            }, 'json');
+        }
+
+        // Seed latestOrderId immediately, then poll every 10 seconds.
+        poll(0);
+        orderPollTimer = setInterval(function () {
+            if (latestOrderId) poll(latestOrderId);
+        }, 10000);
     }
 
     function initOrders() {
