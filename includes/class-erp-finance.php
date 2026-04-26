@@ -46,17 +46,20 @@ class JESP_ERP_Finance
 
         if ($use_hpos) {
             $orders_table = $wpdb->prefix . 'wc_orders';
+            $ood_table    = $wpdb->prefix . 'wc_order_operational_data';
 
-            // Single-row aggregate — replaces loading all WC_Order objects.
+            // Single-row aggregate — shipping_total/discount_total live in wc_order_operational_data.
             $stats = $wpdb->get_row($wpdb->prepare(
-                "SELECT COUNT(*) as order_count,
-                        COALESCE(SUM(total_amount), 0)    as total_revenue,
-                        COALESCE(SUM(tax_amount), 0)      as total_tax,
-                        COALESCE(SUM(shipping_total), 0)  as total_shipping,
-                        COALESCE(SUM(discount_total), 0)  as total_discount
-                 FROM {$orders_table}
-                 WHERE status IN ('wc-completed','wc-processing')
-                 AND date_created_gmt >= %s AND date_created_gmt <= %s",
+                "SELECT COUNT(o.id) as order_count,
+                        COALESCE(SUM(o.total_amount), 0)       as total_revenue,
+                        COALESCE(SUM(o.tax_amount), 0)         as total_tax,
+                        COALESCE(SUM(ood.shipping_total), 0)   as total_shipping,
+                        COALESCE(SUM(ood.discount_total), 0)   as total_discount
+                 FROM {$orders_table} o
+                 LEFT JOIN {$ood_table} ood ON o.id = ood.order_id
+                 WHERE o.type = 'shop_order'
+                 AND o.status IN ('wc-completed','wc-processing')
+                 AND o.date_created_gmt >= %s AND o.date_created_gmt <= %s",
                 $date_from . ' 00:00:00',
                 $date_to   . ' 23:59:59'
             ));
@@ -71,7 +74,7 @@ class JESP_ERP_Finance
             $total_refunds = (float) $wpdb->get_var($wpdb->prepare(
                 "SELECT COALESCE(SUM(ABS(total_amount)), 0)
                  FROM {$orders_table}
-                 WHERE status = 'wc-refunded'
+                 WHERE type = 'shop_order' AND status = 'wc-refunded'
                  AND date_created_gmt >= %s AND date_created_gmt <= %s",
                 $date_from . ' 00:00:00',
                 $date_to   . ' 23:59:59'
@@ -82,6 +85,7 @@ class JESP_ERP_Finance
                 "SELECT COALESCE(SUM(ABS(r.total_amount)), 0)
                  FROM {$orders_table} r
                  INNER JOIN {$orders_table} p ON r.parent_order_id = p.id
+                     AND p.type = 'shop_order'
                      AND p.status IN ('wc-completed','wc-processing')
                      AND p.date_created_gmt >= %s AND p.date_created_gmt <= %s
                  WHERE r.type = 'shop_order_refund'",
